@@ -51,9 +51,12 @@
     kdePackages.kvantum         # Qt theme engine (custom themes)
 
     # ── Wallpaper ─────────────────────────────────────────────────────────
-    # Wallpaper Engine plugin for KDE — requires Wallpaper Engine on Steam.
-    # Verify the package name before rebuilding; it may need a newer nixpkgs pin.
-    # kdePackages.plasma-wallpapers-wallpaper-engine
+    # Requires Wallpaper Engine purchased on Steam.
+    # Note: reports of crashes on Plasma 6.5+ / Qt 6.10 — upstream inactive.
+    kdePackages.wallpaper-engine-plugin
+
+    # ── KWin effects ──────────────────────────────────────────────────────
+    kde-rounded-corners  # Third-party rounded corners (matinlotfali/KDE-Rounded-Corners)
 
     # ── Clipboard ─────────────────────────────────────────────────────────
     wl-clipboard    # `wl-copy` / `wl-paste` — Wayland clipboard CLI
