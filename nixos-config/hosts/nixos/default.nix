@@ -22,6 +22,7 @@
     ../../modules/development.nix   # Compilers, debuggers, build tools
     ../../modules/gaming.nix        # Steam, Lutris, GameMode, RetroArch
     ../../modules/nvidia.nix        # NVIDIA proprietary driver
+    ../../modules/claude.nix        # Claude Desktop (community flake)
     # ../../modules/vm.nix          # QEMU/KVM guest tools — only needed in a VM
     # ../../modules/virtualbox.nix  # VirtualBox guest additions — only needed in a VM
   ];

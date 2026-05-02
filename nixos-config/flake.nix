@@ -12,12 +12,21 @@
       # Reuse the same nixpkgs as the system — avoids downloading a second copy.
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Claude Desktop — not in nixpkgs, maintained as a community flake.
+    claude-desktop = {
+      url = "github:k3d3/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }:
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
   let
     nixosSystem = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
+      # Pass all flake inputs to every module via specialArgs.
+      # Modules that need a flake input (e.g. claude.nix) receive it as a parameter.
+      specialArgs = { inherit inputs; };
       modules = [
         # ── System configuration ────────────────────────────────────────────
         ./hosts/nixos/default.nix
