@@ -18,11 +18,12 @@
     ./hardware-configuration.nix    # Auto-generated — do not edit
 
     ../../modules/common.nix        # Locale, timezone, fonts, audio
-    ../../modules/desktop.nix       # Niri + KDE, display manager, Wayland tools
+    ../../modules/desktop.nix       # KDE Plasma 6, display manager, Wayland tools
     ../../modules/development.nix   # Compilers, debuggers, build tools
     ../../modules/gaming.nix        # Steam, Lutris, GameMode, RetroArch
-    ../../modules/vm.nix            # QEMU/KVM guest tools (SPICE + qemu-agent)
-    # ../../modules/virtualbox.nix  # VirtualBox guest additions (swap in if using VirtualBox)
+    ../../modules/nvidia.nix        # NVIDIA proprietary driver
+    # ../../modules/vm.nix          # QEMU/KVM guest tools — only needed in a VM
+    # ../../modules/virtualbox.nix  # VirtualBox guest additions — only needed in a VM
   ];
 
   # ── Unfree packages ──────────────────────────────────────────────────────────
@@ -31,12 +32,14 @@
   nixpkgs.config.allowUnfree = true;
 
   # ── Bootloader ───────────────────────────────────────────────────────────────
-  # This VM uses a BIOS/GPT disk (no EFI partition), so systemd-boot cannot be
-  # used. GRUB in legacy mode writes core.img to the 8 MiB BIOS boot partition
-  # on /dev/vda (vda1) and updates the GPT protective MBR.
+  # Most modern systems use UEFI. When you run nixos-install on bare metal,
+  # nixos-generate-config will write the correct bootloader config into
+  # hardware-configuration.nix. The settings below are from the old VM setup
+  # and will need to be updated to match your bare metal disk layout.
   #
-  # lib.mkForce ensures this device path wins even if nixos-generate-config
-  # writes a different path (e.g. /dev/sda) into hardware-configuration.nix.
+  # For a typical UEFI system, replace this block with:
+  #   boot.loader.systemd-boot.enable = true;
+  #   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.grub = {
     enable = true;
     device = lib.mkForce "/dev/vda";
@@ -53,10 +56,6 @@
   # networking.firewall.allowedTCPPorts = [ 8080 3000 ];
 
   # ── SSH daemon ────────────────────────────────────────────────────────────────
-  # Allows you to SSH into the VM from the host machine.
-  #   ssh radu@<vm-ip>
-  # Find the VM's IP with: ip addr show
-  # Or set up a host-only network in virt-manager for a stable address.
   services.openssh = {
     enable = true;
     settings = {
@@ -87,9 +86,7 @@
     ];
   };
 
-  # Lets wheel users run sudo without typing a password.
-  # Convenient for a local VM. Set to `true` on real hardware.
-  security.sudo.wheelNeedsPassword = false;
+  security.sudo.wheelNeedsPassword = true;
 
   # ── Global packages ───────────────────────────────────────────────────────────
   # Keep this minimal. User-facing tools belong in home/radu.nix where they

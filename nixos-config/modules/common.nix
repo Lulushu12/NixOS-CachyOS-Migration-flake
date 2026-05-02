@@ -104,9 +104,8 @@
   # Uncomment to enable CUPS printing.
   # services.printing.enable = true;
 
-  # ── Optional: Bluetooth ──────────────────────────────────────────────────────
-  # Uncomment for bare metal with a Bluetooth adapter.
-  # hardware.bluetooth.enable      = true;
-  # hardware.bluetooth.powerOnBoot = true;
-  # services.blueman.enable        = true;   # GUI Bluetooth manager
+  # ── Bluetooth ────────────────────────────────────────────────────────────────
+  # KDE's Bluedevil provides the GUI — no need for blueman.
+  hardware.bluetooth.enable      = true;
+  hardware.bluetooth.powerOnBoot = true;
 }
