@@ -45,10 +45,6 @@
     nvidia-vaapi-driver
   ];
 
-  # 32-bit VA-API (for 32-bit apps via Steam/Proton)
-  hardware.graphics.extraPackages32 = with pkgs; [
-    driversi686Linux.nvidia-vaapi-driver
-  ];
 
   environment.systemPackages = with pkgs; [
     nvtopPackages.nvidia  # GPU monitoring (htop for your GPU)
