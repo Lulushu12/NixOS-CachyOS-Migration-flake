@@ -11,7 +11,7 @@
 # Shorter alias (defined in home/radu.nix):
 #   rebuild
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, ... }:
 
 {
   imports = [
@@ -33,18 +33,10 @@
   nixpkgs.config.allowUnfree = true;
 
   # ── Bootloader ───────────────────────────────────────────────────────────────
-  # Most modern systems use UEFI. When you run nixos-install on bare metal,
-  # nixos-generate-config will write the correct bootloader config into
-  # hardware-configuration.nix. The settings below are from the old VM setup
-  # and will need to be updated to match your bare metal disk layout.
-  #
-  # For a typical UEFI system, replace this block with:
-  #   boot.loader.systemd-boot.enable = true;
-  #   boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.grub = {
-    enable = true;
-    device = lib.mkForce "/dev/vda";
-  };
+  # systemd-boot for UEFI systems (standard on all modern hardware).
+  # After install, run `efibootmgr` to verify the entry was created.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
   # ── Network ──────────────────────────────────────────────────────────────────
   networking.hostName = "nixos";

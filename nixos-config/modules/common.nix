@@ -112,6 +112,15 @@
   # Uncomment to enable CUPS printing.
   # services.printing.enable = true;
 
+  # ── CPU microcode ────────────────────────────────────────────────────────────
+  # Loads AMD microcode updates early in boot — improves stability and security.
+  hardware.cpu.amd.updateMicrocode = true;
+
+  # ── Firmware updates ─────────────────────────────────────────────────────────
+  # Enables fwupd — updates motherboard, SSD, and peripheral firmware via KDE
+  # Discover or `fwupdmgr update` in the terminal.
+  services.fwupd.enable = true;
+
   # ── Bluetooth ────────────────────────────────────────────────────────────────
   # KDE's Bluedevil provides the GUI — no need for blueman.
   hardware.bluetooth.enable      = true;

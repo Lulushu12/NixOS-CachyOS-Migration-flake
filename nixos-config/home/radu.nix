@@ -175,6 +175,8 @@
 
     shellAliases = {
       # NixOS management
+      # Assumes the repo is cloned/symlinked to /etc/nixos.
+      # If you keep it elsewhere (e.g. ~/nixos-config), update this path.
       rebuild   = "sudo nixos-rebuild switch --flake /etc/nixos#nixos";
       testbuild = "sudo nixos-rebuild test --flake /etc/nixos#nixos";
       rollback  = "sudo nixos-rebuild switch --rollback";
