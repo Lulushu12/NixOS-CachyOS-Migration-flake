@@ -48,8 +48,16 @@
       corefonts
 
       # ── Nerd Fonts: patched fonts with developer icons ─────────────────────
-      # Used by Kitty, Waybar, terminal prompts, file managers, etc.
+      # Used by Kitty, terminal prompts, file managers, etc.
       (nerdfonts.override { fonts = [ "JetBrainsMono" "FiraCode" "UbuntuMono" "Hack" ]; })
+
+      # ── Additional fonts (migrated from CachyOS) ───────────────────────────
+      cantarell-fonts   # GNOME default sans-serif (used by some GTK apps)
+      liberation_ttf    # Metric-compatible replacements for Arial/Times/Courier
+      dejavu_fonts      # Extended Unicode coverage family
+      font-awesome      # Icon font (web apps, some status bars)
+      fira              # Fira Sans + Fira Mono (Mozilla's UI font)
+      hack-font         # Monospace font for source code
     ];
 
     fontconfig.defaultFonts = {
@@ -108,4 +116,24 @@
   # KDE's Bluedevil provides the GUI — no need for blueman.
   hardware.bluetooth.enable      = true;
   hardware.bluetooth.powerOnBoot = true;
+
+  # ── Tailscale (mesh VPN) ─────────────────────────────────────────────────────
+  # After enabling, run `sudo tailscale up` to authenticate.
+  services.tailscale.enable = true;
+
+  # ── Power profiles ───────────────────────────────────────────────────────────
+  # Exposes balanced / performance / power-saver profiles in KDE's battery applet.
+  services.power-profiles-daemon.enable = true;
+
+  # ── Jellyfin (self-hosted media server) ──────────────────────────────────────
+  # Web UI available at http://localhost:8096 after first boot.
+  # openFirewall = true lets other devices on the LAN reach it.
+  services.jellyfin = {
+    enable      = true;
+    openFirewall = true;
+  };
+
+  # ── Optional: Printing ───────────────────────────────────────────────────────
+  # Uncomment to enable CUPS printing.
+  # services.printing.enable = true;
 }

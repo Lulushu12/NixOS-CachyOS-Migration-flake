@@ -22,7 +22,7 @@
 #   1. Uncomment the virtualisation.podman section
 #   2. No group membership needed — rootless by design
 
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 {
   environment.systemPackages = with pkgs; [
@@ -62,6 +62,17 @@
     meld            # Visual diff and merge tool (GUI)
     sqlite          # Embedded SQL database + CLI
     jless           # Pager for JSON files (like less but for JSON)
+
+    # ── System / hardware tools ───────────────────────────────────────────────
+    smartmontools   # SMART disk health monitoring (smartctl -a /dev/sda)
+    hwinfo          # Detailed hardware information
+    efibootmgr      # Manage UEFI boot entries from CLI
+    config.boot.kernelPackages.cpupower  # CPU frequency scaling and governor control
+
+    # ── Filesystem tools ──────────────────────────────────────────────────────
+    btrfs-progs     # BTRFS filesystem CLI tools (balance, scrub, subvolume, etc.)
+    btrfs-assistant # GUI for BTRFS snapshot and subvolume management
+    snapper         # Automated BTRFS snapshot manager
 
   ];
 

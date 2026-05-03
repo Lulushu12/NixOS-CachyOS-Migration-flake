@@ -95,6 +95,7 @@
     # ── Dev: misc ─────────────────────────────────────────────────────────────
     gh        # GitHub CLI
     lazygit   # Terminal UI for git
+    git-lfs   # Git Large File Storage extension
 
     # ── Communication ─────────────────────────────────────────────────────────
     discord   # Official Discord client
@@ -105,7 +106,23 @@
     # ── Remote desktop ────────────────────────────────────────────────────────
     anydesk   # Remote desktop (unfree)
 
+    # ── Creative / CAD ────────────────────────────────────────────────────────
+    freecad       # Parametric 3D CAD modeler
+    onlyoffice-bin # MS Office-compatible suite (unfree)
+
+    # ── Cloud / sync ──────────────────────────────────────────────────────────
+    rclone    # Sync to/from Google Drive, S3, etc.
+
+    # ── Wayland tools ─────────────────────────────────────────────────────────
+    wofi      # Wayland app launcher (alternative to KRunner)
+    pamixer   # CLI PipeWire/PulseAudio volume control (scriptable)
+
     # ── Terminal utilities ─────────────────────────────────────────────────────
+    fastfetch # System info display
+    cava      # Terminal audio visualizer
+    micro     # Minimal terminal text editor
+    rsync     # File sync and backup
+    unzip     # Extract .zip archives
     htop      # Process viewer
     btop      # Visual resource monitor
     tree      # Directory tree printer

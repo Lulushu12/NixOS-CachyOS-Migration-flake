@@ -12,6 +12,14 @@
 { pkgs, ... }:
 
 {
+  # ── OpenRGB (RGB lighting control) ────────────────────────────────────────
+  # Installs OpenRGB and sets up udev rules for device access.
+  services.hardware.openrgb.enable = true;
+
+  # ── DDC/CI monitor control (ddcutil) ─────────────────────────────────────
+  # Enables i2c-dev kernel module and grants the user i2c group access,
+  # which ddcutil needs to communicate with monitors over DDC/CI.
+  hardware.i2c.enable = true;
   # ── Login manager (SDDM) ───────────────────────────────────────────────────
   services.displayManager.sddm.enable = true;
   services.displayManager.defaultSession = "plasma";
@@ -49,6 +57,10 @@
     kdePackages.korganizer      # Calendar and task manager
     kdePackages.partitionmanager # Partition editor
     kdePackages.kvantum         # Qt theme engine (custom themes)
+    kdePackages.kcolorchooser   # Color picker utility
+    kdePackages.kinfocenter     # System information viewer
+    kdePackages.dolphin-plugins # Git status, audio tagging, etc. in Dolphin
+    kdePackages.wacomtablet     # Wacom drawing tablet configuration
 
     # ── Wallpaper ─────────────────────────────────────────────────────────
     # Requires Wallpaper Engine purchased on Steam.
@@ -57,6 +69,19 @@
 
     # ── KWin effects ──────────────────────────────────────────────────────
     kde-rounded-corners  # Third-party rounded corners (matinlotfali/KDE-Rounded-Corners)
+
+    # ── Codecs / media ────────────────────────────────────────────────────
+    gst_all_1.gst-plugins-bad   # GStreamer extra codecs (used by KDE/Qt apps)
+    gst_all_1.gst-plugins-ugly  # GStreamer patent-encumbered codecs (MP3, etc.)
+    gst_all_1.gst-libav         # GStreamer FFmpeg bridge (broad format support)
+    ffmpegthumbnailer            # Video thumbnails in Dolphin
+    libdvdcss                    # DVD decryption (for VLC playback)
+
+    # ── Network ───────────────────────────────────────────────────────────
+    networkmanager-openvpn       # OpenVPN plugin for NetworkManager / KDE applet
+
+    # ── Hardware ──────────────────────────────────────────────────────────
+    ddcutil   # Control monitor brightness/input via DDC/CI (needs hardware.i2c above)
 
     # ── Clipboard ─────────────────────────────────────────────────────────
     wl-clipboard    # `wl-copy` / `wl-paste` — Wayland clipboard CLI
