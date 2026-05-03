@@ -56,7 +56,7 @@
     kdePackages.kdeconnect-kde  # Phone integration (KDE Connect)
     kdePackages.korganizer      # Calendar and task manager
     kdePackages.partitionmanager # Partition editor
-    libsForQt5.kvantum          # Qt theme engine (custom themes)
+    qt6Packages.qtstyleplugin-kvantum  # Kvantum Qt theme engine (Qt6)
     kdePackages.kcolorchooser   # Color picker utility
     kdePackages.kinfocenter     # System information viewer
     kdePackages.dolphin-plugins # Git status, audio tagging, etc. in Dolphin
