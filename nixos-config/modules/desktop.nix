@@ -63,9 +63,8 @@
     kdePackages.wacomtablet     # Wacom drawing tablet configuration
 
     # ── Wallpaper ─────────────────────────────────────────────────────────
-    # Requires Wallpaper Engine purchased on Steam.
-    # Note: reports of crashes on Plasma 6.5+ / Qt 6.10 — upstream inactive.
-    kdePackages.wallpaper-engine-plugin
+    # kdePackages.wallpaper-engine-plugin is only in nixpkgs-unstable.
+    # Uncomment after upgrading the nixpkgs pin to unstable.
 
     # ── KWin effects ──────────────────────────────────────────────────────
     kde-rounded-corners  # Third-party rounded corners (matinlotfali/KDE-Rounded-Corners)
