@@ -49,7 +49,11 @@
 
       # ── Nerd Fonts: patched fonts with developer icons ─────────────────────
       # Used by Kitty, terminal prompts, file managers, etc.
-      (nerdfonts.override { fonts = [ "JetBrainsMono" "FiraCode" "UbuntuMono" "Hack" ]; })
+      # Individual packages required since nixpkgs 25.05 (nerdfonts.override removed).
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.fira-code
+      nerd-fonts.ubuntu-mono
+      nerd-fonts.hack
 
       # ── Additional fonts (migrated from CachyOS) ───────────────────────────
       cantarell-fonts   # GNOME default sans-serif (used by some GTK apps)

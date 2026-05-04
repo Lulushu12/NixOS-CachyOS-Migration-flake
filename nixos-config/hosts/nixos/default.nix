@@ -32,6 +32,11 @@
   # Required for: Vivaldi, Spotify, Obsidian, corefonts, DaVinci Resolve, etc.
   nixpkgs.config.allowUnfree = true;
 
+  # ── Kernel ───────────────────────────────────────────────────────────────────
+  # Use the latest upstream kernel (Linux 7.x as of nixos-unstable April 2026).
+  # The NVIDIA open module (nvidia.nix) supports this via open = true.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
   # ── Bootloader ───────────────────────────────────────────────────────────────
   # systemd-boot for UEFI systems (standard on all modern hardware).
   # After install, run `efibootmgr` to verify the entry was created.

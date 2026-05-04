@@ -2,13 +2,14 @@
   description = "Radu's NixOS system configuration";
 
   inputs = {
-    # NixOS stable channel — pinned to a specific commit so nix never tries
-    # to resolve a branch ref (which would cause "cannot write lock file" on
-    # remote flake builds).
-    nixpkgs.url = "github:NixOS/nixpkgs/bdb91860de2f719b57eef819b5617762f7120c70";
+    # nixos-unstable — pinned for reproducibility. Provides Linux 7.x via
+    # linuxPackages_latest (not available in the frozen 25.05 stable channel).
+    # To update: grab the new commit from https://channels.nixos.org/nixos-unstable,
+    # delete flake.lock, then run: sudo nix flake lock /etc/nixos/nixos-config
+    nixpkgs.url = "github:NixOS/nixpkgs/15f4ee454b1dce334612fa6843b3e05cf546efab";
 
     home-manager = {
-      url = "github:nix-community/home-manager/a9f8b3db211b4609ddd83683f9db89796c7f6ac6";
+      url = "github:nix-community/home-manager/9c6f1307e1d76a2285d8001e1b8bc281bfe15dac";
       # Reuse the same nixpkgs as the system — avoids downloading a second copy.
       inputs.nixpkgs.follows = "nixpkgs";
     };
