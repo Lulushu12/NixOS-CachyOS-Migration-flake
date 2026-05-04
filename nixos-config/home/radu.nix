@@ -173,13 +173,11 @@
     };
 
     shellAliases = {
-      # NixOS management
-      # Assumes the repo is cloned/symlinked to /etc/nixos.
-      # If you keep it elsewhere (e.g. ~/nixos-config), update this path.
-      rebuild   = "sudo nixos-rebuild switch --flake /etc/nixos#nixos";
-      testbuild = "sudo nixos-rebuild test --flake /etc/nixos#nixos";
+      # NixOS management — repo root is /etc/nixos, flake is in nixos-config/
+      rebuild   = "sudo nixos-rebuild switch --flake /etc/nixos/nixos-config#nixos";
+      testbuild = "sudo nixos-rebuild test --flake /etc/nixos/nixos-config#nixos";
       rollback  = "sudo nixos-rebuild switch --rollback";
-      update    = "sudo nix flake update /etc/nixos && rebuild";
+      update    = "sudo nix flake update /etc/nixos/nixos-config && rebuild";
       clean     = "sudo nix-collect-garbage -d && nix-collect-garbage -d";
 
       # Better defaults
