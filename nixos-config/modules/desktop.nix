@@ -63,8 +63,7 @@
     kdePackages.wacomtablet     # Wacom drawing tablet configuration
 
     # ── Wallpaper ─────────────────────────────────────────────────────────
-    # kdePackages.wallpaper-engine-plugin is only in nixpkgs-unstable.
-    # Uncomment after upgrading the nixpkgs pin to unstable.
+    kdePackages.wallpaper-engine-plugin  # Wallpaper Engine integration for KDE
 
     # ── KWin effects ──────────────────────────────────────────────────────
     kde-rounded-corners  # Third-party rounded corners (matinlotfali/KDE-Rounded-Corners)
