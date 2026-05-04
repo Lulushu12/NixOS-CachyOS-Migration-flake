@@ -12,6 +12,14 @@
 { pkgs, ... }:
 
 {
+  # ── Flatpak ───────────────────────────────────────────────────────────────
+  # Enables Flatpak for apps not in nixpkgs (e.g. 3D Slicer).
+  # After rebuild, add Flathub once:
+  #   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  # Then install 3D Slicer:
+  #   flatpak install flathub com.slicer.Slicer
+  services.flatpak.enable = true;
+
   # ── OpenRGB (RGB lighting control) ────────────────────────────────────────
   # Installs OpenRGB and sets up udev rules for device access.
   services.hardware.openrgb.enable = true;
