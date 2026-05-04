@@ -47,9 +47,9 @@
   environment.systemPackages = with pkgs; [
 
     # ── Launchers & managers ────────────────────────────────────────────────
+    lutris               # GOG, Epic, Battle.net, emulators, custom installers
     heroic               # Native GOG and Epic Games launcher (polished GUI)
-    # bottles            # Removed: openldap dependency OOMs 16GB RAM on build
-    # lutris             # Removed: same openldap dependency issue
+    bottles              # Run Windows games/apps in isolated Wine prefixes
     protonup-qt          # GUI tool to install and manage Proton-GE versions
 
     # ── Performance overlay ─────────────────────────────────────────────────

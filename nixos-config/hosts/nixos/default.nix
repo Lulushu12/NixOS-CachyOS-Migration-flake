@@ -32,14 +32,6 @@
   # Required for: Vivaldi, Spotify, Obsidian, corefonts, DaVinci Resolve, etc.
   nixpkgs.config.allowUnfree = true;
 
-  # openldap tests are flaky in nixos-unstable 15f4ee4 and block bottles/lutris.
-  # Skip the tests; the package itself is fine.
-  nixpkgs.overlays = [
-    (final: prev: {
-      openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
-    })
-  ];
-
   # ── Kernel ───────────────────────────────────────────────────────────────────
   # Use the latest upstream kernel (Linux 7.x as of nixos-unstable April 2026).
   # The NVIDIA open module (nvidia.nix) supports this via open = true.
