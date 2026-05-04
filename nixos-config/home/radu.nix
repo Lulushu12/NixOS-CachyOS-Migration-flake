@@ -206,7 +206,7 @@
       nrun = "nix run nixpkgs#";     # nrun cowsay -- hello
     };
 
-    initContent = ''
+    initExtra = ''
       # zoxide — must be initialised after oh-my-zsh
       eval "$(zoxide init zsh)"
 
