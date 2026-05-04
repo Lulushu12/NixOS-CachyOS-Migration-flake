@@ -311,7 +311,7 @@
     #   git config --global user.name  "Your Name"
     #   git config --global user.email "you@example.com"
     signing.format = null;
-    settings = {
+    extraConfig = {
       init.defaultBranch   = "main";
       pull.rebase          = true;
       push.autoSetupRemote = true;
