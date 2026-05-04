@@ -31,6 +31,9 @@
   # Enables proprietary packages across the whole system (system + Home Manager).
   # Required for: Vivaldi, Spotify, Obsidian, corefonts, DaVinci Resolve, etc.
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.permittedInsecurePackages = [
+    "electron-36.9.5"  # required by obsidian / vesktop in nixpkgs 25.05
+  ];
 
   # ── Kernel ───────────────────────────────────────────────────────────────────
   # Use the latest upstream kernel (Linux 7.x as of nixos-unstable April 2026).
