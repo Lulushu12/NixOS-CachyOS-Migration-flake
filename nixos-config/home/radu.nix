@@ -321,16 +321,14 @@
       alias.undo = "reset HEAD~1 --mixed";
       alias.wip  = "commit -am 'WIP'";
     };
-  };
-
-  programs.delta = {
-    enable                = true;
-    enableGitIntegration  = true;
-    options = {
-      navigate     = true;
-      line-numbers = true;
-      dark         = true;
-      syntax-theme = "TwoDark";
+    delta = {
+      enable  = true;
+      options = {
+        navigate     = true;
+        line-numbers = true;
+        dark         = true;
+        syntax-theme = "TwoDark";
+      };
     };
   };
 
