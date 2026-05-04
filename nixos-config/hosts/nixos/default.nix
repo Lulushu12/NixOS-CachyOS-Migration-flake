@@ -22,7 +22,7 @@
     ../../modules/development.nix   # Compilers, debuggers, build tools
     ../../modules/gaming.nix        # Steam, Lutris, GameMode, RetroArch
     ../../modules/nvidia.nix        # NVIDIA proprietary driver
-    ../../modules/claude.nix        # Claude Desktop
+    # ../../modules/claude.nix      # Disabled — upstream flake broken with nixpkgs unstable (k3d3/claude-desktop-linux-flake#89)
     # ../../modules/vm.nix          # QEMU/KVM guest tools — only needed in a VM
     # ../../modules/virtualbox.nix  # VirtualBox guest additions — only needed in a VM
   ];

@@ -12,11 +12,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Claude Desktop — not in nixpkgs, maintained as a community flake.
-    claude-desktop = {
-      url = "github:k3d3/claude-desktop-linux-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # Claude Desktop — DISABLED: k3d3/claude-desktop-linux-flake uses
+    # nodePackages.asar which was removed from nixpkgs on 2026-03-03.
+    # Re-enable once https://github.com/k3d3/claude-desktop-linux-flake/pull/89 merges.
+    # claude-desktop = {
+    #   url = "github:k3d3/claude-desktop-linux-flake";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
