@@ -79,8 +79,7 @@
 
     # ── Dev: Go ───────────────────────────────────────────────────────────────
     go       # Go compiler
-    gopls    # Go language server
-    gotools  # goimports and friends
+    gopls    # Go language server (includes modernize and other tools in 0.21+)
 
     # ── Dev: Nix ──────────────────────────────────────────────────────────────
     nil        # Nix language server (autocomplete for .nix files)
