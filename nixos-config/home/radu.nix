@@ -51,7 +51,7 @@
     inkscape-with-extensions  # Vector graphics editor (full)
 
     # ── Multimedia: video editing ─────────────────────────────────────────────
-    kdenlive         # Non-linear video editor (KDE-native)
+    kdePackages.kdenlive  # Non-linear video editor (KDE-native)
     # davinci-resolve  # DISABLED in VM: requires a real GPU.
     #                  # Uncomment on bare metal with a working GPU driver.
 
@@ -207,7 +207,7 @@
       nrun = "nix run nixpkgs#";     # nrun cowsay -- hello
     };
 
-    initExtra = ''
+    initContent = ''
       # zoxide — must be initialised after oh-my-zsh
       eval "$(zoxide init zsh)"
 
@@ -311,6 +311,7 @@
     # No name/email here — set locally with:
     #   git config --global user.name  "Your Name"
     #   git config --global user.email "you@example.com"
+    signing.format = null;  # silence home-manager 25.05 warning; no GPG signing configured
     extraConfig = {
       init.defaultBranch   = "main";
       pull.rebase          = true;
