@@ -309,7 +309,7 @@
     #   git config --global user.name  "Your Name"
     #   git config --global user.email "you@example.com"
     signing.format = null;
-    extraConfig = {
+    settings = {
       init.defaultBranch   = "main";
       pull.rebase          = true;
       push.autoSetupRemote = true;
@@ -319,14 +319,16 @@
       alias.undo = "reset HEAD~1 --mixed";
       alias.wip  = "commit -am 'WIP'";
     };
-    delta = {
-      enable  = true;
-      options = {
-        navigate     = true;
-        line-numbers = true;
-        dark         = true;
-        syntax-theme = "TwoDark";
-      };
+  };
+
+  programs.delta = {
+    enable               = true;
+    enableGitIntegration = true;
+    options = {
+      navigate     = true;
+      line-numbers = true;
+      dark         = true;
+      syntax-theme = "TwoDark";
     };
   };
 
