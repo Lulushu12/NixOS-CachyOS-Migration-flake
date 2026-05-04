@@ -108,7 +108,7 @@
 
     # ── Creative / CAD ────────────────────────────────────────────────────────
     freecad       # Parametric 3D CAD modeler
-    onlyoffice-bin # MS Office-compatible suite (unfree)
+    onlyoffice-desktopeditors # MS Office-compatible suite (unfree)
 
     # ── Cloud / sync ──────────────────────────────────────────────────────────
     rclone    # Sync to/from Google Drive, S3, etc.
