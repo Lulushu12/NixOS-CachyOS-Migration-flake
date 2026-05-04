@@ -311,8 +311,8 @@
     # No name/email here — set locally with:
     #   git config --global user.name  "Your Name"
     #   git config --global user.email "you@example.com"
-    signing.format = null;  # silence home-manager 25.05 warning; no GPG signing configured
-    extraConfig = {
+    signing.format = null;
+    settings = {
       init.defaultBranch   = "main";
       pull.rebase          = true;
       push.autoSetupRemote = true;
@@ -322,14 +322,16 @@
       alias.undo = "reset HEAD~1 --mixed";
       alias.wip  = "commit -am 'WIP'";
     };
-    delta = {
-      enable  = true;
-      options = {
-        navigate     = true;
-        line-numbers = true;
-        dark         = true;
-        syntax-theme = "TwoDark";
-      };
+  };
+
+  programs.delta = {
+    enable                = true;
+    enableGitIntegration  = true;
+    options = {
+      navigate     = true;
+      line-numbers = true;
+      dark         = true;
+      syntax-theme = "TwoDark";
     };
   };
 

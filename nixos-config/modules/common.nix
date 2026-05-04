@@ -36,7 +36,7 @@
       noto-fonts              # Broad Latin/Greek/Cyrillic/etc. coverage
       noto-fonts-cjk-sans     # Chinese, Japanese, Korean (sans-serif)
       noto-fonts-cjk-serif    # Chinese, Japanese, Korean (serif)
-      noto-fonts-emoji        # Colour emoji (renders in browsers, terminal, apps)
+      noto-fonts-color-emoji  # Colour emoji (renders in browsers, terminal, apps)
 
       # ── Modern UI fonts ────────────────────────────────────────────────────
       inter                   # Clean, widely used sans-serif UI font
@@ -97,7 +97,7 @@
   services.pipewire.wireplumber.enable = true;
 
   # PulseAudio must be disabled — PipeWire's pulse layer replaces it.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
 
   # RTKit grants PipeWire real-time scheduling priority.
   # This reduces audio glitches under load (gaming, heavy CPU tasks, etc.).

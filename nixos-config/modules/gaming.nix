@@ -59,7 +59,7 @@
     # ── Wine ────────────────────────────────────────────────────────────────
     # wineWowPackages.waylandFull installs both 64-bit and 32-bit Wine
     # with native Wayland support — best choice for a Wayland desktop.
-    wineWowPackages.waylandFull
+    wineWow64Packages.waylandFull
     winetricks           # Install Windows runtimes (DirectX, .NET, VCRedist…)
 
     # ── Emulation ───────────────────────────────────────────────────────────
