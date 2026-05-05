@@ -111,14 +111,15 @@
   # ── Nix settings ──────────────────────────────────────────────────────────────
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
-    # Deduplicate identical files in the Nix store (hardlinks). Saves disk space.
     auto-optimise-store = true;
-    # Allow radu to run `nix` commands (nix shell, nix build, nix develop, etc.)
     trusted-users = [ "root" "radu" ];
-    # Binary caches — pre-built packages from the community (avoids compiling)
+    # Cap cores per build job. Default is all threads (16 on Ryzen 7 3700X),
+    # which causes OOM when compiling large packages. 8 threads still fast.
+    cores = 8;
+    max-jobs = 2;
     substituters = [
       "https://cache.nixos.org"
-      "https://nix-community.cachix.org"   # Community packages (home-manager, etc.)
+      "https://nix-community.cachix.org"
     ];
     trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
