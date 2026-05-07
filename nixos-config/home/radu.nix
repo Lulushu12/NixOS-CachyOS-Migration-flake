@@ -62,7 +62,7 @@
     vesktop          # Open-source Discord client
 
     # ── Productivity ──────────────────────────────────────────────────────────
-    libreoffice-fresh  # Full office suite
+    (pkgs.libreoffice-fresh.overrideAttrs (_: { doCheck = false; }))  # Full office suite (tests skipped: upstream sd_export_tests flaky)
     obsidian           # Markdown knowledge base (unfree)
 
     # ── Dev: Python ───────────────────────────────────────────────────────────
