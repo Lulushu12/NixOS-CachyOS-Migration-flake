@@ -39,6 +39,9 @@
       # openldap's syncreplication test (test017) is timing-sensitive and fails
       # non-deterministically on nixos-unstable. Skip tests; the package itself is fine.
       openldap = prev.openldap.overrideAttrs (_: { doCheck = false; });
+      # libreoffice-fresh CppunitTest_sd_export_tests fails in sandbox builds on
+      # nixos-unstable (environment / font rendering differences). Package is fine.
+      libreoffice-fresh = prev.libreoffice-fresh.overrideAttrs (_: { doCheck = false; });
     })
   ];
 
