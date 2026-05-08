@@ -128,11 +128,15 @@
     build-dir = "/run/media/radu/7fbdcc9d-3097-41e2-87b3-347ca9025691/radu/nix-tmp";
     substituters = [
       "https://cache.nixos.org"
-      "https://nix-community.cachix.org"
+      # nix-community.cachix.org removed: every substitute was rejected with
+      # "not signed by any of the keys in trusted-public-keys", meaning their
+      # signing key has changed. Re-add with the updated key once confirmed:
+      #   curl -s https://nix-community.cachix.org/nix-cache-info
+      # "https://nix-community.cachix.org"
     ];
     trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc="
+      # "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc="
     ];
   };
 
