@@ -120,6 +120,12 @@
     # which causes OOM when compiling large packages. 8 threads still fast.
     cores = 8;
     max-jobs = 2;
+    # Redirect build sandboxes to the HDD so large source builds (plasma,
+    # libreoffice, etc.) don't fill the root partition with 15-25 GB of
+    # intermediate files. The daemon ignores TMPDIR set on the CLI — this
+    # is the correct knob. Requires the HDD to be mounted before nix-daemon
+    # starts; if it ever becomes unavailable, comment this out.
+    build-dir = "/run/media/radu/7fbdcc9d-3097-41e2-87b3-347ca9025691/radu/nix-tmp";
     substituters = [
       "https://cache.nixos.org"
       "https://nix-community.cachix.org"
