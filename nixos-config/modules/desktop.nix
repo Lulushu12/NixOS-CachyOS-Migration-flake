@@ -62,7 +62,10 @@
     kdePackages.gwenview        # Image viewer
     kdePackages.spectacle       # Screenshot tool
     kdePackages.kdeconnect-kde  # Phone integration (KDE Connect)
-    kdePackages.korganizer      # Calendar and task manager
+    # kdePackages.korganizer    # DISABLED: libgravatar-26.04.0 requires Qt6GuiTools/
+    #                            # Qt6WidgetsTools >= 6.11.0, not yet in nixpkgs unstable
+    #                            # (nixpkgs commit 15f4ee4, April 2026). Re-enable after
+    #                            # Qt 6.11 lands in nixos-unstable.
     kdePackages.partitionmanager # Partition editor
     qt6Packages.qtstyleplugin-kvantum  # Kvantum Qt theme engine (Qt6)
     kdePackages.kcolorchooser   # Color picker utility
