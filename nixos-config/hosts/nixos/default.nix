@@ -50,6 +50,13 @@
   # The NVIDIA open module (nvidia.nix) supports this via open = true.
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
+  # ── Filesystems ───────────────────────────────────────────────────────────────
+  fileSystems."/home/radu/HDD" = {
+    device = "/dev/disk/by-uuid/7fbdcc9d-3097-41e2-87b3-347ca9025691";
+    fsType = "ext4";
+    options = [ "defaults" "nofail" "x-systemd.automount" ];
+  };
+
   # ── Bootloader ───────────────────────────────────────────────────────────────
   # systemd-boot for UEFI systems (standard on all modern hardware).
   # After install, run `efibootmgr` to verify the entry was created.
