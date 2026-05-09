@@ -12,16 +12,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Claude Desktop — DISABLED: k3d3/claude-desktop-linux-flake uses
-    # nodePackages.asar which was removed from nixpkgs on 2026-03-03.
-    # Re-enable once https://github.com/k3d3/claude-desktop-linux-flake/pull/89 merges.
-    # claude-desktop = {
-    #   url = "github:k3d3/claude-desktop-linux-flake";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    # Pinned to PR #89 branch (fix: replace nodePackages.asar with buildNpmPackage)
+    # because the main branch is broken on nixpkgs-unstable post-2026-03-03.
+    # Switch back to "github:k3d3/claude-desktop-linux-flake" once PR #89 is merged.
+    claude-desktop = {
+      url = "github:naotoo1/claude-desktop-linux-flake/fix/remove-nodepackages-asar";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, claude-desktop, ... }@inputs:
   let
     nixosSystem = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
