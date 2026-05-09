@@ -30,6 +30,13 @@
     QT_QPA_PLATFORM    = "wayland;xcb";
   };
 
+  # Propagate the Nix profile PATH into the systemd user environment so that
+  # desktop-launched apps (e.g. Claude Desktop spawning claude-code) can find
+  # binaries that are only in the user profile, not the system PATH.
+  systemd.user.sessionVariables = {
+    PATH = "${config.home.profileDirectory}/bin:$PATH";
+  };
+
   # ════════════════════════════════════════════════════════════════════════════
   # PACKAGES
   # ════════════════════════════════════════════════════════════════════════════
