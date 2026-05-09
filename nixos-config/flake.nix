@@ -7,7 +7,7 @@
     #   1. Check https://channels.nixos.org/nixos-unstable for the latest commit
     #   2. Update the hash below and delete flake.lock
     #   3. Run: sudo nix flake update /etc/nixos/nixos-config
-    nixpkgs.url = "github:NixOS/nixpkgs/549bd84d6279f9852cae6225e372cc67fb91a4c1";
+    nixpkgs.url = "github:NixOS/nixpkgs/15f4ee454b1dce334612fa6843b3e05cf546efab";
 
     home-manager = {
       url = "github:nix-community/home-manager/fdb2ccba9d5e1238d32e0c4a3ec1a277efa80c1d";
