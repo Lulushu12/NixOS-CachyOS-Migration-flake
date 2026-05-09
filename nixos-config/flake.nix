@@ -21,13 +21,13 @@
     #   1. Uncomment the block below
     #   2. Uncomment ../../modules/claude.nix in hosts/nixos/default.nix
     #   3. Run: sudo nix flake update && sudo nixos-rebuild switch --flake /etc/nixos#nixos
-    # claude-desktop = {
-    #   url = "github:k3d3/claude-desktop-linux-flake";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    claude-desktop = {
+      url = "github:k3d3/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager }@inputs:
+  outputs = { self, nixpkgs, home-manager, claude-desktop, ... }@inputs:
   let
     nixosSystem = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
