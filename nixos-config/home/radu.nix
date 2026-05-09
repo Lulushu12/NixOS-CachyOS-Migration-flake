@@ -92,6 +92,7 @@
     nixpkgs-fmt  # Format .nix files
 
     # ── Dev: misc ─────────────────────────────────────────────────────────────
+    claude-code  # Anthropic Claude CLI
     gh        # GitHub CLI
     lazygit   # Terminal UI for git
     git-lfs   # Git Large File Storage extension
