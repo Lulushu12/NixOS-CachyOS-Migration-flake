@@ -212,6 +212,9 @@
     };
 
     initContent = ''
+      # Ctrl+Backspace → delete previous word
+      bindkey '^H' backward-kill-word
+
       # zoxide — must be initialised after oh-my-zsh
       eval "$(zoxide init zsh)"
 
