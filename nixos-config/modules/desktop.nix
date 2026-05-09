@@ -12,6 +12,14 @@
 { pkgs, ... }:
 
 {
+  # ── Flatpak ───────────────────────────────────────────────────────────────
+  # Enables Flatpak for apps not in nixpkgs (e.g. 3D Slicer).
+  # After rebuild, add Flathub once:
+  #   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  # Then install 3D Slicer:
+  #   flatpak install flathub com.slicer.Slicer
+  services.flatpak.enable = true;
+
   # ── OpenRGB (RGB lighting control) ────────────────────────────────────────
   # Installs OpenRGB and sets up udev rules for device access.
   services.hardware.openrgb.enable = true;
@@ -54,7 +62,10 @@
     kdePackages.gwenview        # Image viewer
     kdePackages.spectacle       # Screenshot tool
     kdePackages.kdeconnect-kde  # Phone integration (KDE Connect)
-    kdePackages.korganizer      # Calendar and task manager
+    # kdePackages.korganizer    # DISABLED: libgravatar-26.04.0 requires Qt6GuiTools/
+    #                            # Qt6WidgetsTools >= 6.11.0, not yet in nixpkgs unstable
+    #                            # (nixpkgs commit 15f4ee4, April 2026). Re-enable after
+    #                            # Qt 6.11 lands in nixos-unstable.
     kdePackages.partitionmanager # Partition editor
     qt6Packages.qtstyleplugin-kvantum  # Kvantum Qt theme engine (Qt6)
     kdePackages.kcolorchooser   # Color picker utility
@@ -63,8 +74,7 @@
     kdePackages.wacomtablet     # Wacom drawing tablet configuration
 
     # ── Wallpaper ─────────────────────────────────────────────────────────
-    # kdePackages.wallpaper-engine-plugin is only in nixpkgs-unstable.
-    # Uncomment after upgrading the nixpkgs pin to unstable.
+    kdePackages.wallpaper-engine-plugin  # Wallpaper Engine integration for KDE
 
     # ── KWin effects ──────────────────────────────────────────────────────
     kde-rounded-corners  # Third-party rounded corners (matinlotfali/KDE-Rounded-Corners)

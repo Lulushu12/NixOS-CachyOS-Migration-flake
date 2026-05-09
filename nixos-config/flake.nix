@@ -2,32 +2,28 @@
   description = "Radu's NixOS system configuration";
 
   inputs = {
-    # nixos-unstable — pinned for reproducibility. Provides Linux 7.x via
-    # linuxPackages_latest (not available in the frozen 25.05 stable channel).
-    # To update: grab the new commit from https://channels.nixos.org/nixos-unstable,
-    # delete flake.lock, then run: sudo nix flake lock /etc/nixos/nixos-config
+    # nixos-unstable — pinned for reproducibility. Prevents surprise rebuilds
+    # when running `nix flake update`. To advance the pin:
+    #   1. Check https://channels.nixos.org/nixos-unstable for the latest commit
+    #   2. Update the hash below and delete flake.lock
+    #   3. Run: sudo nix flake update /etc/nixos/nixos-config
     nixpkgs.url = "github:NixOS/nixpkgs/15f4ee454b1dce334612fa6843b3e05cf546efab";
 
     home-manager = {
-      url = "github:nix-community/home-manager/9c6f1307e1d76a2285d8001e1b8bc281bfe15dac";
+      url = "github:nix-community/home-manager/fdb2ccba9d5e1238d32e0c4a3ec1a277efa80c1d";
       # Reuse the same nixpkgs as the system — avoids downloading a second copy.
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Claude Desktop — not in nixpkgs, maintained as a community flake.
-    # DISABLED for initial install: the flake input is unlocked and nix cannot
-    # write the lock file when installing via git+file://.
-    # To re-enable after first boot:
-    #   1. Uncomment the block below
-    #   2. Uncomment ../../modules/claude.nix in hosts/nixos/default.nix
-    #   3. Run: sudo nix flake update && sudo nixos-rebuild switch --flake /etc/nixos#nixos
-    # claude-desktop = {
-    #   url = "github:k3d3/claude-desktop-linux-flake";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    # Pinned to aaddrick fork which packages the current Claude Desktop version (1.6608.2).
+    # k3d3/claude-desktop-linux-flake is stuck on 0.14.10 (too old, app rejects it).
+    claude-desktop = {
+      url = "github:aaddrick/claude-desktop-debian";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager }@inputs:
+  outputs = { self, nixpkgs, home-manager, claude-desktop, ... }@inputs:
   let
     nixosSystem = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";

@@ -30,6 +30,13 @@
     QT_QPA_PLATFORM    = "wayland;xcb";
   };
 
+  # Propagate the Nix profile PATH into the systemd user environment so that
+  # desktop-launched apps (e.g. Claude Desktop spawning claude-code) can find
+  # binaries that are only in the user profile, not the system PATH.
+  systemd.user.sessionVariables = {
+    PATH = "${config.home.profileDirectory}/bin:$PATH";
+  };
+
   # ════════════════════════════════════════════════════════════════════════════
   # PACKAGES
   # ════════════════════════════════════════════════════════════════════════════
@@ -51,7 +58,7 @@
     inkscape-with-extensions  # Vector graphics editor (full)
 
     # ── Multimedia: video editing ─────────────────────────────────────────────
-    kdenlive         # Non-linear video editor (KDE-native)
+    kdePackages.kdenlive  # Non-linear video editor (KDE-native)
     # davinci-resolve  # DISABLED in VM: requires a real GPU.
     #                  # Uncomment on bare metal with a working GPU driver.
 
@@ -66,7 +73,10 @@
     obsidian           # Markdown knowledge base (unfree)
 
     # ── Dev: Python ───────────────────────────────────────────────────────────
-    python3  # Python 3 interpreter
+    (python3.withPackages (ps: with ps; [
+      websockets   # audio visualizer widget transport
+      dbus-python  # MPRIS media metadata queries
+    ]))  # replaces bare python3 — includes packages needed by the visualizer
     uv       # Fast package/env manager (replaces pip + pyenv + venv)
 
     # ── Dev: JavaScript / Node ────────────────────────────────────────────────
@@ -79,8 +89,7 @@
 
     # ── Dev: Go ───────────────────────────────────────────────────────────────
     go       # Go compiler
-    gopls    # Go language server
-    gotools  # goimports and friends
+    gopls    # Go language server (includes modernize and other tools in 0.21+)
 
     # ── Dev: Nix ──────────────────────────────────────────────────────────────
     nil        # Nix language server (autocomplete for .nix files)
@@ -108,7 +117,7 @@
 
     # ── Creative / CAD ────────────────────────────────────────────────────────
     freecad       # Parametric 3D CAD modeler
-    onlyoffice-bin # MS Office-compatible suite (unfree)
+    onlyoffice-desktopeditors # MS Office-compatible suite (unfree)
 
     # ── Cloud / sync ──────────────────────────────────────────────────────────
     rclone    # Sync to/from Google Drive, S3, etc.
@@ -174,13 +183,11 @@
     };
 
     shellAliases = {
-      # NixOS management
-      # Assumes the repo is cloned/symlinked to /etc/nixos.
-      # If you keep it elsewhere (e.g. ~/nixos-config), update this path.
-      rebuild   = "sudo nixos-rebuild switch --flake /etc/nixos#nixos";
-      testbuild = "sudo nixos-rebuild test --flake /etc/nixos#nixos";
+      # NixOS management — repo root is /etc/nixos, flake is in nixos-config/
+      rebuild   = "sudo nixos-rebuild switch --flake /etc/nixos/nixos-config#nixos";
+      testbuild = "sudo nixos-rebuild test --flake /etc/nixos/nixos-config#nixos";
       rollback  = "sudo nixos-rebuild switch --rollback";
-      update    = "sudo nix flake update /etc/nixos && rebuild";
+      update    = "sudo nix flake update /etc/nixos/nixos-config && rebuild";
       clean     = "sudo nix-collect-garbage -d && nix-collect-garbage -d";
 
       # Better defaults
@@ -207,7 +214,10 @@
       nrun = "nix run nixpkgs#";     # nrun cowsay -- hello
     };
 
-    initExtra = ''
+    initContent = ''
+      # Ctrl+Backspace → delete previous word
+      bindkey '^H' backward-kill-word
+
       # zoxide — must be initialised after oh-my-zsh
       eval "$(zoxide init zsh)"
 
@@ -311,7 +321,8 @@
     # No name/email here — set locally with:
     #   git config --global user.name  "Your Name"
     #   git config --global user.email "you@example.com"
-    extraConfig = {
+    signing.format = null;
+    settings = {
       init.defaultBranch   = "main";
       pull.rebase          = true;
       push.autoSetupRemote = true;
@@ -321,14 +332,16 @@
       alias.undo = "reset HEAD~1 --mixed";
       alias.wip  = "commit -am 'WIP'";
     };
-    delta = {
-      enable  = true;
-      options = {
-        navigate     = true;
-        line-numbers = true;
-        dark         = true;
-        syntax-theme = "TwoDark";
-      };
+  };
+
+  programs.delta = {
+    enable               = true;
+    enableGitIntegration = true;
+    options = {
+      navigate     = true;
+      line-numbers = true;
+      dark         = true;
+      syntax-theme = "TwoDark";
     };
   };
 
