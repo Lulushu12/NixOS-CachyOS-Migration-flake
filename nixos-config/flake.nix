@@ -2,12 +2,15 @@
   description = "Radu's NixOS system configuration";
 
   inputs = {
-    # nixos-unstable — rolling release with Linux 7.x and NVIDIA 595.
-    # Run `sudo nix flake update /etc/nixos/nixos-config` to advance the pin.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # nixos-unstable — pinned for reproducibility. Prevents surprise rebuilds
+    # when running `nix flake update`. To advance the pin:
+    #   1. Check https://channels.nixos.org/nixos-unstable for the latest commit
+    #   2. Update the hash below and delete flake.lock
+    #   3. Run: sudo nix flake update /etc/nixos/nixos-config
+    nixpkgs.url = "github:NixOS/nixpkgs/549bd84d6279f9852cae6225e372cc67fb91a4c1";
 
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/fdb2ccba9d5e1238d32e0c4a3ec1a277efa80c1d";
       # Reuse the same nixpkgs as the system — avoids downloading a second copy.
       inputs.nixpkgs.follows = "nixpkgs";
     };
