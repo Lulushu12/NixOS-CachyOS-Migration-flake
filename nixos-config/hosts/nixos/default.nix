@@ -107,8 +107,9 @@
     wget
     curl
     git
-    pciutils    # lspci — useful for checking GPU in the VM
-    usbutils    # lsusb
+    pciutils      # lspci — useful for checking GPU in the VM
+    usbutils      # lsusb
+    claude-code-bin  # Claude Code CLI (system-wide so desktop apps can find it)
   ];
 
   # ── Nix settings ──────────────────────────────────────────────────────────────
