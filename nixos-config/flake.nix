@@ -15,11 +15,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Pinned to PR #89 branch (fix: replace nodePackages.asar with buildNpmPackage)
-    # because the main branch is broken on nixpkgs-unstable post-2026-03-03.
-    # Switch back to "github:k3d3/claude-desktop-linux-flake" once PR #89 is merged.
+    # Pinned to aaddrick fork which packages the current Claude Desktop version (1.6608.2).
+    # k3d3/claude-desktop-linux-flake is stuck on 0.14.10 (too old, app rejects it).
     claude-desktop = {
-      url = "github:naotoo1/claude-desktop-linux-flake/fix/remove-nodepackages-asar";
+      url = "github:aaddrick/claude-desktop-debian";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
