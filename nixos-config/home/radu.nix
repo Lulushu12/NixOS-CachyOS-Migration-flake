@@ -73,7 +73,10 @@
     obsidian           # Markdown knowledge base (unfree)
 
     # ── Dev: Python ───────────────────────────────────────────────────────────
-    python3  # Python 3 interpreter
+    (python3.withPackages (ps: with ps; [
+      websockets   # audio visualizer widget transport
+      dbus-python  # MPRIS media metadata queries
+    ]))  # replaces bare python3 — includes packages needed by the visualizer
     uv       # Fast package/env manager (replaces pip + pyenv + venv)
 
     # ── Dev: JavaScript / Node ────────────────────────────────────────────────
