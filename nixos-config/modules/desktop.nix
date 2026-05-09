@@ -99,9 +99,6 @@
     playerctl       # CLI media control (play/pause/next via keybindings)
     pavucontrol     # PipeWire/PulseAudio volume control GUI
 
-    # ── Custom keyboard shortcuts ─────────────────────────────────────────
-    kdePackages.khotkeys  # KDE custom shortcuts daemon (powers System Settings → Custom Shortcuts)
-
     # ── Brightness ────────────────────────────────────────────────────────
     brightnessctl   # Screen brightness control (laptops)
 
