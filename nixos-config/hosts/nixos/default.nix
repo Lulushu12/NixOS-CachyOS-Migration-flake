@@ -23,6 +23,7 @@
     ../../modules/gaming.nix        # Steam, Lutris, GameMode, RetroArch
     ../../modules/nvidia.nix        # NVIDIA proprietary driver
     ../../modules/claude.nix        # Claude Desktop (via PR #89 fix branch)
+    ../../modules/audio-visualizer.nix  # Audio visualizer widget dependencies
     # ../../modules/vm.nix          # QEMU/KVM guest tools — only needed in a VM
     # ../../modules/virtualbox.nix  # VirtualBox guest additions — only needed in a VM
   ];
