@@ -21,8 +21,11 @@
     #   1. Uncomment the block below
     #   2. Uncomment ../../modules/claude.nix in hosts/nixos/default.nix
     #   3. Run: sudo nix flake update && sudo nixos-rebuild switch --flake /etc/nixos#nixos
+    # Pinned to PR #89 branch (fix: replace nodePackages.asar with buildNpmPackage)
+    # because the main branch is broken on nixpkgs-unstable post-2026-03-03.
+    # Switch back to "github:k3d3/claude-desktop-linux-flake" once PR #89 is merged.
     claude-desktop = {
-      url = "github:k3d3/claude-desktop-linux-flake";
+      url = "github:naotoo1/claude-desktop-linux-flake/fix/remove-nodepackages-asar";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
