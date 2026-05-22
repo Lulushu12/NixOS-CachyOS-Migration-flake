@@ -21,6 +21,14 @@
       url = "github:aaddrick/claude-desktop-debian";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Declarative KDE Plasma configuration via Home Manager.
+    # Covers panels, widgets, shortcuts, KWin, colour schemes, Kvantum, etc.
+    plasma-manager = {
+      url = "github:nix-community/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
   };
 
   outputs = { self, nixpkgs, home-manager, claude-desktop, ... }@inputs:
@@ -43,6 +51,11 @@
           home-manager.useUserPackages = true;
           # Back up any dotfiles that conflict instead of failing
           home-manager.backupFileExtension = "backup";
+
+          # Inject plasma-manager into every home-manager user config.
+          home-manager.sharedModules = [
+            inputs.plasma-manager.homeManagerModules.plasma-manager
+          ];
 
           home-manager.users.radu = import ./home/radu.nix;
         }
