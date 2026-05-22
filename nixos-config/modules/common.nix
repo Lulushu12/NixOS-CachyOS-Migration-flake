@@ -112,6 +112,30 @@
     { domain = "@audio"; item = "nofile";  type = "hard"; value = "524288"; }
   ];
 
+  # ── ALSA auto-mute fix ───────────────────────────────────────────────────────
+  # By default the HDA codec mutes the rear line-out (speakers) when anything
+  # is plugged into the front headphone jack. This service disables that so
+  # both outputs stay active simultaneously.
+  environment.etc."amixer-init.sh" = {
+    text = ''
+      #!/bin/sh
+      ${pkgs.alsa-utils}/bin/amixer -c 1 set 'Auto-Mute Mode' Disabled
+    '';
+    mode = "0755";
+  };
+
+  systemd.user.services.alsa-disable-automute = {
+    description = "Disable ALSA auto-mute on Starship/Matisse codec";
+    after  = [ "pipewire.service" "wireplumber.service" ];
+    wants  = [ "pipewire.service" ];
+    wantedBy = [ "default.target" ];
+    serviceConfig = {
+      Type            = "oneshot";
+      ExecStart       = "/etc/amixer-init.sh";
+      RemainAfterExit = true;
+    };
+  };
+
   # ── Optional: Printing ───────────────────────────────────────────────────────
   # Uncomment to enable CUPS printing.
   # services.printing.enable = true;
