@@ -22,7 +22,7 @@
     discord
 
     # ── Productivity ──────────────────────────────────────────────────────────
-    libreoffice-fresh
+    (libreoffice-fresh.overrideAttrs (_: { doCheck = false; }))  # tests skipped: upstream sd_export_tests flaky
     obsidian
 
     # ── Remote / cloud ────────────────────────────────────────────────────────

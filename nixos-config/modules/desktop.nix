@@ -102,12 +102,28 @@
     # ── Brightness ────────────────────────────────────────────────────────
     brightnessctl   # Screen brightness control (laptops)
 
+    # ── Akonadi calendar serializer (Merkuro / clock widget) ─────────────────
+    # Root cause of "no calendar events in clock widget": akonadi_serializer_kcalcore.so
+    # was missing from QT_PLUGIN_PATH. Without it, Akonadi received all calendar items
+    # but every hasPayload<KCalendarCore::Incidence::Ptr>() check failed, so nothing
+    # was ever converted to EventData and nothing reached the widget.
+    # Diagnosis: set org.kde.pim.pimeventsplugin=true in ~/.config/QtProject/qtlogging.ini
+    # to see "Item XXXX has no payload" for every event — that pointed directly here.
+    kdePackages.akonadi-calendar
+
     # ── General Wayland / Qt support ──────────────────────────────────────
     xdg-utils       # `xdg-open` file association handling
     qt6.qtwayland   # Qt 6 Wayland platform plugin
     libsForQt5.qt5ct # Qt 5 style configurator
 
   ];
+
+  # ── Akonadi calendar serializer plugin path ────────────────────────────────
+  # Exposes akonadi_serializer_kcalcore.so to Qt's plugin loader and the
+  # .desktop service file to Akonadi via XDG_DATA_DIRS.
+  environment.sessionVariables = {
+    QT_PLUGIN_PATH = [ "${pkgs.kdePackages.akonadi-calendar}/lib/qt-6/plugins" ];
+  };
 
   # ── Qt platform theme ──────────────────────────────────────────────────────
   qt = {
