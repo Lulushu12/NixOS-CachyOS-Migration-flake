@@ -27,6 +27,11 @@ from ..core.search import SearchResult
 class ConfirmScreen(ModalScreen[bool]):
     """Simple Yes/No confirmation."""
 
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def action_cancel(self) -> None:
+        self.dismiss(False)
+
     DEFAULT_CSS = """
     ConfirmScreen {
         align: center middle;
@@ -63,6 +68,12 @@ class ConfirmScreen(ModalScreen[bool]):
 class DiffScreen(ModalScreen[ApplyResult | None]):
     """Shows a plan's diff; Apply runs the pipeline in a worker thread."""
 
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def action_cancel(self) -> None:
+        if not self._applying:  # can't abandon a write in flight
+            self.dismiss(None)
+
     DEFAULT_CSS = """
     DiffScreen {
         align: center middle;
@@ -97,6 +108,7 @@ class DiffScreen(ModalScreen[ApplyResult | None]):
         super().__init__()
         self.pipeline = pipeline
         self.plan = plan
+        self._applying = False
 
     def compose(self):
         diff_text = self.plan.diff() or "(no changes)"
@@ -116,6 +128,7 @@ class DiffScreen(ModalScreen[ApplyResult | None]):
         if event.button.id == "cancel-btn":
             self.dismiss(None)
         elif event.button.id == "apply-btn":
+            self._applying = True
             self.query_one("#apply-btn", Button).disabled = True
             self.query_one("#cancel-btn", Button).disabled = True
             self.query_one("#diff-loading", LoadingIndicator).display = True
@@ -129,6 +142,11 @@ class DiffScreen(ModalScreen[ApplyResult | None]):
 
 class NewModuleScreen(ModalScreen[tuple[str, str] | None]):
     """Ask for a new module's relative path and description."""
+
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
 
     DEFAULT_CSS = """
     NewModuleScreen {
@@ -185,6 +203,11 @@ class NewModuleScreen(ModalScreen[tuple[str, str] | None]):
 
 class PickPackageScreen(ModalScreen[tuple[str, str] | None]):
     """Step 1 of add-package: search nixpkgs, or type an attr name directly."""
+
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
 
     DEFAULT_CSS = """
     PickPackageScreen {
@@ -301,6 +324,11 @@ class PickPackageScreen(ModalScreen[tuple[str, str] | None]):
 
 class PackageDetailsScreen(ModalScreen[tuple[str | None, str | None] | None]):
     """Step 2 of add-package: optional comment + section."""
+
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
 
     NO_SECTION = "\0no-section"
     NEW_SECTION = "\0new-section"

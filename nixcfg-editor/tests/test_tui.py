@@ -209,3 +209,66 @@ def test_add_duplicate_package_shows_error(tmp_config: Path, monkeypatch):
             assert len(app.screen_stack) == 1
 
     run(scenario())
+
+
+# ── 6. keyboard: arrows fold/unfold tree nodes, Esc closes dialogs ───────────
+
+def test_arrow_keys_collapse_and_expand(tmp_config: Path):
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            gaming = find_module(tree, "gaming.nix")
+            tree.select_node(gaming)
+            await pilot.pause()
+
+            assert gaming.is_expanded
+            await pilot.press("left")
+            assert not gaming.is_expanded
+            await pilot.press("right")
+            assert gaming.is_expanded
+
+            # Left on a leaf jumps to its parent.
+            lutris = find_package(gaming, "lutris")
+            tree.select_node(lutris)
+            await pilot.pause()
+            await pilot.press("left")
+            assert tree.cursor_node is lutris.parent
+
+    run(scenario())
+
+
+def test_escape_closes_dialogs_without_changes(tmp_config: Path, monkeypatch):
+    monkeypatch.setattr("nixcfg.core.search.available", lambda: False)
+
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            before = (tmp_config / "modules/gaming.nix").read_text()
+
+            gaming = find_module(tree, "gaming.nix")
+            lutris = find_package(gaming, "lutris")
+            tree.select_node(lutris)
+            await pilot.pause()
+
+            # Esc out of the pick-package dialog.
+            await pilot.press("a")
+            await pilot.pause()
+            assert len(app.screen_stack) == 2
+            await pilot.press("escape")
+            await pilot.pause()
+            assert len(app.screen_stack) == 1
+
+            # Esc out of the diff dialog after a toggle — nothing written.
+            await pilot.press("space")
+            await pilot.pause()
+            assert len(app.screen_stack) == 2
+            await pilot.press("escape")
+            await pilot.pause()
+            assert len(app.screen_stack) == 1
+            assert (tmp_config / "modules/gaming.nix").read_text() == before
+
+    run(scenario())

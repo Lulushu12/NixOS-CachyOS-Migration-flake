@@ -40,6 +40,26 @@ nixcfg --no-validate    # skip `nix flake check` on apply
 nixcfg --no-commit      # don't git-commit applied changes
 ```
 
+## Keyboard
+
+Fully keyboard-driven (mouse works too):
+
+| Key | Where | Action |
+|---|---|---|
+| `↑` / `↓` | tree | move cursor |
+| `→` / `←` | tree | expand / collapse node (`←` on a leaf jumps to its parent) |
+| `Shift+↑/↓` | tree | previous / next sibling |
+| `Shift+←` | tree | jump to parent |
+| `a` | tree | add package to the highlighted module/list/section |
+| `Space` | tree | enable/disable the highlighted package or module import |
+| `d` | tree | remove the highlighted package (with confirmation) |
+| `n` | tree | new module under the highlighted module/branch |
+| `r` | anywhere | reload config from disk |
+| `q` | anywhere | quit |
+| `Tab` / `Shift+Tab` | dialogs | move between fields and buttons |
+| `Enter` | dialogs | submit input / press focused button / pick search row |
+| `Esc` | dialogs | cancel and close (disabled while an apply is running) |
+
 ## What it does
 
 - **Tree browser**: starts at `flake.nix`, follows every `imports = [ … ]`

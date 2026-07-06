@@ -71,10 +71,35 @@ def _import_leaf_label(entry) -> Text:
 
 
 class NavTree(Tree):
-    """Tree that hands the "space" key to the app instead of toggling nodes."""
+    """Tree with file-manager keyboard conventions.
+
+    Space is handed to the app (enable/disable) instead of Textual's default
+    expand/collapse; since `auto_expand` is off, right/left take over
+    folding: right expands the highlighted node, left collapses it (or jumps
+    to the parent when there is nothing to collapse).
+    """
+
+    BINDINGS = [
+        Binding("right", "expand_current", "Expand", show=False),
+        Binding("left", "collapse_current", "Collapse", show=False),
+    ]
 
     def action_toggle_node(self) -> None:
         self.app.action_toggle_enabled()
+
+    def action_expand_current(self) -> None:
+        node = self.cursor_node
+        if node is not None and node.allow_expand:
+            node.expand()
+
+    def action_collapse_current(self) -> None:
+        node = self.cursor_node
+        if node is None:
+            return
+        if node.allow_expand and node.is_expanded:
+            node.collapse()
+        else:
+            self.action_cursor_parent()
 
 
 class NixcfgApp(App):
