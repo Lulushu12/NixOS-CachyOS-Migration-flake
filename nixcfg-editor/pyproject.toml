@@ -1,0 +1,24 @@
+[project]
+name = "nixcfg-editor"
+version = "0.1.0"
+description = "Visual TUI browser and editor for a modular NixOS flake configuration"
+requires-python = ">=3.11"
+dependencies = [
+    "textual>=0.80",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+nixcfg = "nixcfg.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["nixcfg*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
