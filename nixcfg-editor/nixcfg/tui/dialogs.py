@@ -201,6 +201,128 @@ class NewModuleScreen(ModalScreen[tuple[str, str] | None]):
         self.dismiss((path, desc))
 
 
+class CommentScreen(ModalScreen[str | None]):
+    """Edit a package's inline comment. Dismisses with the new comment
+    ("" clears it) or None on cancel."""
+
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+    DEFAULT_CSS = """
+    CommentScreen {
+        align: center middle;
+    }
+    CommentScreen > Vertical {
+        width: 70;
+        height: auto;
+        border: round $primary;
+        background: $surface;
+        padding: 1 2;
+    }
+    CommentScreen #comment-buttons {
+        height: auto;
+        margin-top: 1;
+        align: right middle;
+    }
+    """
+
+    def __init__(self, package_name: str, current: str) -> None:
+        super().__init__()
+        self.package_name = package_name
+        self.current = current
+
+    def compose(self):
+        with Vertical():
+            yield Static(f"Comment for {self.package_name}", id="comment-title")
+            yield Label("Leave empty to remove the comment")
+            yield Input(value=self.current, id="comment-value")
+            with Horizontal(id="comment-buttons"):
+                yield Button("Cancel", id="cancel")
+                yield Button("Save", id="save", variant="primary")
+
+    def on_mount(self) -> None:
+        self.query_one("#comment-value", Input).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel":
+            self.dismiss(None)
+        else:
+            self.dismiss(self.query_one("#comment-value", Input).value.strip())
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.dismiss(event.value.strip())
+
+
+HELP_TEXT = """\
+ Navigation
+   ↑/↓  or  j/k        move cursor
+   →/←  or  l/h        expand / collapse (← on a leaf: jump to parent)
+   g / G               top / bottom of tree
+   Shift+↑/↓           previous / next sibling
+   Shift+←             jump to parent
+   /                   find in tree (Enter: next match, Esc: close)
+
+ Editing
+   a                   add package (search nixpkgs or type a name)
+   Space               enable / disable package or module import
+   c                   edit a package's inline comment
+   d                   remove package (asks for confirmation)
+   n                   new module under the highlighted module/branch
+   u                   undo the last applied change (git revert)
+
+ Other
+   e                   open the highlighted file in $EDITOR at this line
+   y                   copy the highlighted name to the clipboard
+   v                   run `nix flake check` now
+   r                   reload config from disk
+   Ctrl+P              command palette (all actions, searchable)
+   ?                   this help
+   q                   quit
+
+ In dialogs: Tab/Shift+Tab move focus, Enter submits, Esc cancels.
+ Every edit shows its diff first; applying validates the flake and
+ makes one git commit, so `u` (or `git revert`) undoes it cleanly.
+"""
+
+
+class HelpScreen(ModalScreen[None]):
+    """Full keyboard reference."""
+
+    BINDINGS = [
+        ("escape", "close", "Close"),
+        ("q", "close", "Close"),
+        ("question_mark", "close", "Close"),
+    ]
+
+    def action_close(self) -> None:
+        self.dismiss(None)
+
+    DEFAULT_CSS = """
+    HelpScreen {
+        align: center middle;
+    }
+    HelpScreen > VerticalScroll {
+        width: 76;
+        height: 90%;
+        max-height: 42;
+        border: round $primary;
+        background: $surface;
+        padding: 1 2;
+    }
+    HelpScreen #help-title {
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    """
+
+    def compose(self):
+        with VerticalScroll():
+            yield Static("nixcfg — keys", id="help-title")
+            yield Static(HELP_TEXT)
+
+
 class PickPackageScreen(ModalScreen[tuple[str, str] | None]):
     """Step 1 of add-package: search nixpkgs, or type an attr name directly."""
 

@@ -11,6 +11,7 @@ the corresponding stage is skipped and reported, never silently.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -19,6 +20,10 @@ from pathlib import Path
 from .edits import EditPlan
 
 VALIDATE_TIMEOUT = 300
+
+# Matches this tool's own commits AND git-revert commits of them, so that
+# repeated undo toggles a change back and forth instead of double-reverting.
+NIXCFG_SUBJECT_RE = re.compile(r'^(nixcfg: |Revert "nixcfg: )')
 
 
 @dataclass
@@ -60,6 +65,52 @@ class Pipeline:
     def preview(self, plan: EditPlan) -> str:
         return plan.diff()
 
+    def check(self) -> tuple[bool, str]:
+        """Run `nix flake check` on the current tree. Caller must ensure
+        nix_available(); returns (ok, output)."""
+        try:
+            res = _run(
+                ["nix", "flake", "check", "--no-build",
+                 "--extra-experimental-features", "nix-command flakes"],
+                self.root,
+                timeout=VALIDATE_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired:
+            return False, "nix flake check timed out"
+        return res.returncode == 0, res.stderr.strip()
+
+    def last_nixcfg_commit(self) -> tuple[str, str] | None:
+        """(hash, subject) of the most recent commit this tool made —
+        including its own reverts, so undo can toggle."""
+        if not self.git_available():
+            return None
+        res = _run(["git", "log", "-n", "50", "--pretty=%H%x09%s"], self.root)
+        if res.returncode != 0:
+            return None
+        for line in res.stdout.splitlines():
+            commit_hash, _, subject = line.partition("\t")
+            if NIXCFG_SUBJECT_RE.match(subject):
+                return commit_hash, subject
+        return None
+
+    def revert_commit(self, commit_hash: str, subject: str) -> ApplyResult:
+        """`git revert` one of this tool's commits (undo)."""
+        res = _run(["git", "revert", "--no-edit", commit_hash], self.root, timeout=60)
+        if res.returncode != 0:
+            _run(["git", "revert", "--abort"], self.root)
+            return ApplyResult(
+                ok=False,
+                message=f"Could not revert '{subject}'",
+                output=(res.stderr.strip() or res.stdout.strip()),
+            )
+        rev = _run(["git", "rev-parse", "--short", "HEAD"], self.root)
+        return ApplyResult(
+            ok=True,
+            message=f"Reverted: {subject}",
+            committed=True,
+            commit_hash=rev.stdout.strip() or None,
+        )
+
     def apply(self, plan: EditPlan) -> ApplyResult:
         if not plan.edits:
             return ApplyResult(ok=False, message="Nothing to apply")
@@ -83,26 +134,13 @@ class Pipeline:
         validated = False
         if self.validate:
             if self.nix_available():
-                try:
-                    res = _run(
-                        ["nix", "flake", "check", "--no-build",
-                         "--extra-experimental-features", "nix-command flakes"],
-                        self.root,
-                        timeout=VALIDATE_TIMEOUT,
-                    )
-                except subprocess.TimeoutExpired:
-                    self._rollback(plan, written)
-                    return ApplyResult(
-                        ok=False,
-                        message="Validation timed out; changes rolled back",
-                        rolled_back=True,
-                    )
-                if res.returncode != 0:
+                ok, output = self.check()
+                if not ok:
                     self._rollback(plan, written)
                     return ApplyResult(
                         ok=False,
                         message="nix flake check failed; changes rolled back",
-                        output=res.stderr.strip(),
+                        output=output,
                         rolled_back=True,
                     )
                 validated = True

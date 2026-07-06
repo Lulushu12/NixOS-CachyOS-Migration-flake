@@ -189,6 +189,37 @@ def set_package_enabled(
     )
 
 
+def set_package_comment(
+    module: ModuleFile,
+    plist: PackageList,
+    entry: PackageEntry,
+    comment: str | None,
+) -> EditPlan:
+    """Replace (or clear, with None) a package's inline comment.
+
+    The new comment is aligned to the entry's section neighbors, same as
+    add_package. Expression entries aren't supported — their comment sits
+    after arbitrary code, not at a predictable column.
+    """
+    _guard_writable(module)
+    if entry.is_expr:
+        raise EditError("Editing comments on expression entries isn't supported")
+
+    lines = module.lines.copy()
+    old = lines[entry.line]
+    indent = old[: len(old) - len(old.lstrip())]
+    neighbors = [
+        p for p in plist.packages if p.section == entry.section and p is not entry
+    ]
+    col = _comment_column(module.lines, neighbors)
+    name_part = entry.name if entry.enabled else "# " + entry.name
+    lines[entry.line] = _format_entry(indent, name_part, comment, col)
+    return EditPlan(
+        description=f"nixcfg: comment {entry.name} in {module.rel}",
+        edits=[_make_edit(module, lines)],
+    )
+
+
 def remove_package(module: ModuleFile, entry: PackageEntry) -> EditPlan:
     _guard_writable(module)
     lines = module.lines.copy()

@@ -46,19 +46,31 @@ Fully keyboard-driven (mouse works too):
 
 | Key | Where | Action |
 |---|---|---|
-| `↑` / `↓` | tree | move cursor |
-| `→` / `←` | tree | expand / collapse node (`←` on a leaf jumps to its parent) |
+| `↑`/`↓` or `j`/`k` | tree | move cursor |
+| `→`/`←` or `l`/`h` | tree | expand / collapse node (`←` on a leaf jumps to its parent) |
+| `g` / `G` | tree | jump to top / bottom |
 | `Shift+↑/↓` | tree | previous / next sibling |
 | `Shift+←` | tree | jump to parent |
+| `/` | tree | find — jumps as you type; `Enter` next match, `Esc` close |
 | `a` | tree | add package to the highlighted module/list/section |
 | `Space` | tree | enable/disable the highlighted package or module import |
+| `c` | tree | edit the highlighted package's inline comment |
 | `d` | tree | remove the highlighted package (with confirmation) |
 | `n` | tree | new module under the highlighted module/branch |
+| `u` | anywhere | undo the last applied change (`git revert`, with confirmation) |
+| `e` | tree | open the highlighted file in `$EDITOR` at that line |
+| `y` | tree | copy the highlighted name to the clipboard |
+| `v` | anywhere | run `nix flake check` on demand |
 | `r` | anywhere | reload config from disk |
+| `?` | anywhere | help overlay with this key map |
+| `Ctrl+P` | anywhere | command palette (every action, searchable) |
 | `q` | anywhere | quit |
 | `Tab` / `Shift+Tab` | dialogs | move between fields and buttons |
 | `Enter` | dialogs | submit input / press focused button / pick search row |
 | `Esc` | dialogs | cancel and close (disabled while an apply is running) |
+
+`x` (extract to module) and `m` (move package) are reserved for the
+Phase 2 multi-file operations.
 
 ## What it does
 

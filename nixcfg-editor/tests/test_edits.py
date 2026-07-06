@@ -321,3 +321,101 @@ def test_pipeline_git_commit(tmp_config):
         capture_output=True, text=True,
     ).stdout.strip()
     assert status == ""  # nothing left uncommitted
+
+
+# ── set_package_comment ──────────────────────────────────────────────────────
+
+def test_set_package_comment_replaces_and_aligns(tmp_config):
+    rel = "modules/gaming.nix"
+    mod = get_module(tmp_config, rel)
+    plist = get_plist(mod)
+    lutris = next(p for p in plist.packages if p.name == "lutris")
+    heroic_line = mod.lines[
+        next(p for p in plist.packages if p.name == "heroic").line
+    ]
+
+    plan = edits.set_package_comment(mod, plist, lutris, "new comment")
+    apply_plan(plan, tmp_config)
+    mod2 = get_module(tmp_config, rel)
+    lutris2 = next(p for p in get_plist(mod2).packages if p.name == "lutris")
+    assert lutris2.comment == "new comment"
+    # Comment column still aligned with the section neighbors.
+    assert mod2.lines[lutris2.line].find("#") == heroic_line.find("#")
+
+
+def test_set_package_comment_clear_and_disabled_entry(tmp_config):
+    rel = "home/modules/apps.nix"
+    mod = get_module(tmp_config, rel)
+    plist = get_plist(mod)
+
+    brave = next(p for p in plist.packages if p.name == "brave")
+    apply_plan(edits.set_package_comment(mod, plist, brave, None), tmp_config)
+    mod2 = get_module(tmp_config, rel)
+    plist2 = get_plist(mod2)
+    assert next(p for p in plist2.packages if p.name == "brave").comment is None
+
+    davinci = next(p for p in plist2.packages if p.name == "davinci-resolve")
+    assert not davinci.enabled
+    apply_plan(
+        edits.set_package_comment(mod2, plist2, davinci, "still disabled"), tmp_config
+    )
+    mod3 = get_module(tmp_config, rel)
+    davinci3 = next(
+        p for p in get_plist(mod3).packages if p.name == "davinci-resolve"
+    )
+    assert not davinci3.enabled  # disabled state preserved
+    assert davinci3.comment == "still disabled"
+
+
+def test_set_package_comment_expr_rejected(tmp_config):
+    mod = get_module(tmp_config, "home/modules/apps.nix")
+    plist = get_plist(mod)
+    expr = next(p for p in plist.packages if p.is_expr)
+    with pytest.raises(EditError, match="expression"):
+        edits.set_package_comment(mod, plist, expr, "nope")
+
+
+# ── undo (git revert) ────────────────────────────────────────────────────────
+
+def _git_init(root):
+    import subprocess
+
+    for cmd in (
+        ["git", "init", "-q"],
+        ["git", "config", "user.email", "t@t"],
+        ["git", "config", "user.name", "t"],
+        ["git", "add", "-A"],
+        ["git", "commit", "-qm", "init"],
+    ):
+        subprocess.run(cmd, cwd=root, check=True)
+
+
+def test_undo_reverts_last_nixcfg_commit(tmp_config):
+    _git_init(tmp_config)
+    rel = "home/modules/apps.nix"
+    original = (tmp_config / rel).read_text()
+
+    mod = get_module(tmp_config, rel)
+    plan = edits.add_package(mod, get_plist(mod), "firefox", section="Browsers")
+    pipe = Pipeline(tmp_config, validate=False, commit=True)
+    assert pipe.apply(plan).ok
+
+    found = pipe.last_nixcfg_commit()
+    assert found is not None
+    commit_hash, subject = found
+    assert subject.startswith("nixcfg: add firefox")
+
+    result = pipe.revert_commit(commit_hash, subject)
+    assert result.ok and result.commit_hash
+    assert (tmp_config / rel).read_text() == original
+
+    # Undo of the undo: the revert commit is itself found and revertable.
+    found2 = pipe.last_nixcfg_commit()
+    assert found2 is not None and found2[1].startswith('Revert "nixcfg:')
+    assert pipe.revert_commit(*found2).ok
+    assert "firefox" in (tmp_config / rel).read_text()
+
+
+def test_last_nixcfg_commit_none_without_git(tmp_config):
+    pipe = Pipeline(tmp_config, validate=False, commit=True)
+    assert pipe.last_nixcfg_commit() is None

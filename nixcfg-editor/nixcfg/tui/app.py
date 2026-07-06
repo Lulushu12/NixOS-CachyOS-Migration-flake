@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 from rich.text import Text
 from textual import work
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, SuspendNotSupported
 from textual.binding import Binding
 from textual.containers import Horizontal, VerticalScroll
-from textual.widgets import Footer, Header, Static, Tree
+from textual.widgets import Footer, Header, Input, Static, Tree
 from textual.widgets.tree import TreeNode as WidgetTreeNode
 
 from ..core import edits, search
@@ -19,8 +21,10 @@ from ..core.model import ConfigTree
 from ..core.model import TreeNode as CoreTreeNode
 from ..core.pipeline import ApplyResult, Pipeline
 from .dialogs import (
+    CommentScreen,
     ConfirmScreen,
     DiffScreen,
+    HelpScreen,
     NewModuleScreen,
     PackageDetailsScreen,
     PickPackageScreen,
@@ -82,10 +86,26 @@ class NavTree(Tree):
     BINDINGS = [
         Binding("right", "expand_current", "Expand", show=False),
         Binding("left", "collapse_current", "Collapse", show=False),
+        Binding("l", "expand_current", "Expand", show=False),
+        Binding("h", "collapse_current", "Collapse", show=False),
+        Binding("j", "cursor_down", "Down", show=False),
+        Binding("k", "cursor_up", "Up", show=False),
+        Binding("g", "cursor_top", "Top", show=False),
+        Binding("G", "cursor_bottom", "Bottom", show=False),
     ]
 
     def action_toggle_node(self) -> None:
         self.app.action_toggle_enabled()
+
+    def action_cursor_top(self) -> None:
+        if self.last_line >= 0:
+            self.cursor_line = 0
+            self.scroll_to_line(0, animate=False)
+
+    def action_cursor_bottom(self) -> None:
+        if self.last_line >= 0:
+            self.cursor_line = self.last_line
+            self.scroll_to_line(self.last_line, animate=False)
 
     def action_expand_current(self) -> None:
         node = self.cursor_node
@@ -102,6 +122,37 @@ class NavTree(Tree):
             self.action_cursor_parent()
 
 
+# Editors whose CLI can jump to a line. Anything else gets just the file.
+EDITOR_LINE_ARGS = {
+    "vi": lambda p, l: [f"+{l}", str(p)],
+    "vim": lambda p, l: [f"+{l}", str(p)],
+    "nvim": lambda p, l: [f"+{l}", str(p)],
+    "nano": lambda p, l: [f"+{l}", str(p)],
+    "micro": lambda p, l: [f"+{l}", str(p)],
+    "emacs": lambda p, l: [f"+{l}", str(p)],
+    "hx": lambda p, l: [f"{p}:{l}"],
+    "kate": lambda p, l: ["--line", str(l), str(p)],
+    "kwrite": lambda p, l: ["--line", str(l), str(p)],
+    "code": lambda p, l: ["--wait", "-g", f"{p}:{l}"],
+    "codium": lambda p, l: ["--wait", "-g", f"{p}:{l}"],
+}
+
+
+class FindInput(Input):
+    """Bottom-docked find bar; Esc hands control back to the tree.
+
+    Not focusable while hidden — otherwise it wins the app's auto-focus at
+    startup and silently eats every keypress meant for the tree.
+    """
+
+    can_focus = False
+
+    BINDINGS = [Binding("escape", "close_find", "Close", show=False)]
+
+    def action_close_find(self) -> None:
+        self.app.action_close_find()
+
+
 class NixcfgApp(App):
     """Browser / editor for a modular NixOS flake config."""
 
@@ -109,11 +160,18 @@ class NixcfgApp(App):
 
     BINDINGS = [
         Binding("q", "quit", "Quit"),
-        Binding("r", "reload", "Reload"),
+        Binding("question_mark", "help", "Help", key_display="?"),
+        Binding("slash", "find", "Find", key_display="/"),
         Binding("a", "add_package", "Add pkg"),
-        Binding("space", "toggle_enabled", "Toggle enable"),
-        Binding("d", "remove_package", "Remove pkg"),
+        Binding("space", "toggle_enabled", "Toggle"),
+        Binding("d", "remove_package", "Remove"),
         Binding("n", "new_module", "New module"),
+        Binding("c", "edit_comment", "Comment", show=False),
+        Binding("e", "open_editor", "Open in $EDITOR", show=False),
+        Binding("y", "yank", "Copy name", show=False),
+        Binding("u", "undo", "Undo last change", show=False),
+        Binding("v", "validate", "Validate flake", show=False),
+        Binding("r", "reload", "Reload", show=False),
     ]
 
     def __init__(self, root: Path, validate: bool = True, commit: bool = True) -> None:
@@ -124,6 +182,8 @@ class NixcfgApp(App):
         self.tree_data: ConfigTree | None = None
         self._path_index: dict[Path, WidgetTreeNode] = {}
         self._last_plan = None
+        self._find_matches: list[WidgetTreeNode] = []
+        self._find_index = 0
 
     # ── layout ────────────────────────────────────────────────────────────
 
@@ -135,6 +195,7 @@ class NixcfgApp(App):
                 yield Static(
                     "Select a node in the tree to see details.", id="detail"
                 )
+        yield FindInput(placeholder="find package or module…", id="find-input")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -148,6 +209,7 @@ class NixcfgApp(App):
         # that off so selecting an already-expanded node can't collapse it.
         tree.auto_expand = False
         self.load_config()
+        tree.focus()
 
     # ── config loading / tree building ───────────────────────────────────
 
@@ -160,6 +222,11 @@ class NixcfgApp(App):
             return
         self.sub_title = str(self.tree_data.root)
         self.populate_tree()
+        # A rebuilt tree invalidates find matches (they hold old nodes).
+        self._find_matches = []
+        find = self.query_one("#find-input", FindInput)
+        if find.display:
+            self.action_close_find()
 
     def populate_tree(self) -> None:
         tree = self.query_one("#nav-tree", NavTree)
@@ -350,14 +417,17 @@ class NixcfgApp(App):
         if path is None:
             return
         widget_node = self._path_index.get(path)
-        if widget_node is None:
-            return
+        if widget_node is not None:
+            self._reveal_widget_node(widget_node)
+
+    def _reveal_widget_node(self, widget_node: WidgetTreeNode) -> None:
         node = widget_node
         while node is not None:
             node.expand()
             node = node.parent
         tree = self.query_one("#nav-tree", NavTree)
         tree.select_node(widget_node)
+        tree.scroll_to_node(widget_node, animate=False)
 
     def _entry_module_file(self, kind: str):
         assert self.tree_data is not None
@@ -369,6 +439,210 @@ class NixcfgApp(App):
     def action_reload(self) -> None:
         self.load_config()
         self.notify("Reloaded from disk")
+
+    def action_help(self) -> None:
+        self.push_screen(HelpScreen())
+
+    # ── find ──────────────────────────────────────────────────────────────
+
+    def action_find(self) -> None:
+        find = self.query_one("#find-input", FindInput)
+        find.display = True
+        find.can_focus = True
+        find.value = ""
+        find.border_subtitle = ""
+        find.focus()
+
+    def action_close_find(self) -> None:
+        find = self.query_one("#find-input", FindInput)
+        find.display = False
+        find.can_focus = False
+        self._find_matches = []
+        self.query_one("#nav-tree", NavTree).focus()
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input.id != "find-input":
+            return
+        self._update_find(event.value.strip().lower())
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id != "find-input":
+            return
+        self._advance_find()
+
+    def _update_find(self, query: str) -> None:
+        find = self.query_one("#find-input", FindInput)
+        self._find_matches = []
+        self._find_index = 0
+        if not query:
+            find.border_subtitle = ""
+            return
+
+        tree = self.query_one("#nav-tree", NavTree)
+
+        def walk(node: WidgetTreeNode) -> None:
+            if node.data is not None and query in str(node.label).lower():
+                self._find_matches.append(node)
+            for child in node.children:
+                walk(child)
+
+        walk(tree.root)
+        if self._find_matches:
+            find.border_subtitle = f"1/{len(self._find_matches)}"
+            self._reveal_widget_node(self._find_matches[0])
+        else:
+            find.border_subtitle = "no matches"
+
+    def _advance_find(self) -> None:
+        if not self._find_matches:
+            return
+        self._find_index = (self._find_index + 1) % len(self._find_matches)
+        find = self.query_one("#find-input", FindInput)
+        find.border_subtitle = f"{self._find_index + 1}/{len(self._find_matches)}"
+        self._reveal_widget_node(self._find_matches[self._find_index])
+
+    # ── open in editor ────────────────────────────────────────────────────
+
+    def _editor_target(self, data) -> tuple[Path, int] | None:
+        """(file, 1-based line) for the highlighted node."""
+        if isinstance(data, ModuleData):
+            return data.tree_node.file.path, 1
+        if isinstance(data, PlistData):
+            return data.tree_node.file.path, data.plist.start_line + 1
+        if isinstance(data, SectionData):
+            line = next(
+                (s.line for s in data.plist.sections if s.title == data.title), 0
+            )
+            return data.tree_node.file.path, line + 1
+        if isinstance(data, PackageData):
+            return data.tree_node.file.path, data.entry.line + 1
+        if isinstance(data, ImportLeafData):
+            return data.parent.file.path, data.entry.line + 1
+        return None
+
+    def action_open_editor(self) -> None:
+        target = self._editor_target(self._cursor_data())
+        if target is None:
+            self.notify("Select a file, package or import first", severity="warning")
+            return
+        path, line = target
+        editor = os.environ.get("VISUAL") or os.environ.get("EDITOR") or "nano"
+        base = os.path.basename(editor.split()[0])
+        line_args = EDITOR_LINE_ARGS.get(base, lambda p, _l: [str(p)])
+        cmd = editor.split() + line_args(path, line)
+        try:
+            with self.suspend():
+                subprocess.call(cmd)
+        except SuspendNotSupported:
+            self.notify(
+                "This terminal doesn't support suspending to an editor",
+                severity="error",
+            )
+            return
+        except OSError as exc:
+            self.notify(f"Could not launch {editor}: {exc}", severity="error")
+            return
+        self.load_config()
+        self._reveal_path(path)
+
+    # ── yank / undo / validate / comment ──────────────────────────────────
+
+    def action_yank(self) -> None:
+        data = self._cursor_data()
+        if isinstance(data, PackageData):
+            text = data.entry.name
+        elif isinstance(data, ModuleData):
+            text = data.tree_node.file.rel
+        elif isinstance(data, ImportLeafData):
+            text = data.entry.raw
+        elif isinstance(data, PlistData):
+            text = data.plist.attrpath
+        elif isinstance(data, SectionData):
+            text = data.title
+        else:
+            self.notify("Nothing to copy here", severity="warning")
+            return
+        self.copy_to_clipboard(text)
+        self.notify(f"Copied: {text}")
+
+    def action_undo(self) -> None:
+        pipe = self._pipeline()
+        found = pipe.last_nixcfg_commit()
+        if found is None:
+            self.notify(
+                "No nixcfg commit to undo (git history has none in the last 50)",
+                severity="warning",
+            )
+            return
+        commit_hash, subject = found
+
+        def on_confirm(confirmed: bool | None) -> None:
+            if confirmed:
+                self._do_undo(commit_hash, subject)
+
+        self.push_screen(ConfirmScreen(f"Revert: {subject}?"), on_confirm)
+
+    @work(thread=True)
+    def _do_undo(self, commit_hash: str, subject: str) -> None:
+        result = self._pipeline().revert_commit(commit_hash, subject)
+        self.call_from_thread(self._after_undo, result)
+
+    def _after_undo(self, result: ApplyResult) -> None:
+        if result.ok:
+            self.notify(result.message)
+        else:
+            message = result.message
+            if result.output:
+                message += f": {result.output}"
+            self.notify(message, severity="error")
+        self.load_config()
+
+    def action_validate(self) -> None:
+        pipe = self._pipeline()
+        if not pipe.nix_available():
+            self.notify("nix not found — cannot validate here", severity="warning")
+            return
+        self.notify("Running nix flake check…")
+        self._do_validate()
+
+    @work(thread=True)
+    def _do_validate(self) -> None:
+        ok, output = self._pipeline().check()
+        self.call_from_thread(self._after_validate, ok, output)
+
+    def _after_validate(self, ok: bool, output: str) -> None:
+        if ok:
+            self.notify("Flake check passed")
+        else:
+            self.notify(f"Flake check failed: {output}", severity="error")
+
+    def action_edit_comment(self) -> None:
+        data = self._cursor_data()
+        if not isinstance(data, PackageData):
+            self.notify("Select a package to edit its comment", severity="warning")
+            return
+        if data.entry.is_expr:
+            self.notify(
+                "Expression entries' comments must be edited in the file",
+                severity="warning",
+            )
+            return
+
+        def on_result(res: str | None) -> None:
+            if res is None:
+                return  # cancelled; "" means clear the comment
+            try:
+                plan = edits.set_package_comment(
+                    data.tree_node.file, data.plist, data.entry, res or None
+                )
+            except EditError as exc:
+                self.notify(str(exc), severity="error")
+                return
+            self._run_plan(plan)
+
+        self.push_screen(
+            CommentScreen(data.entry.name, data.entry.comment or ""), on_result
+        )
 
     def action_add_package(self) -> None:
         data = self._cursor_data()

@@ -20,3 +20,10 @@ NavTree {
 #detail {
     width: 1fr;
 }
+
+#find-input {
+    display: none;
+    dock: bottom;
+    border: round $primary;
+    margin: 0 1;
+}

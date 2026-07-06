@@ -272,3 +272,164 @@ def test_escape_closes_dialogs_without_changes(tmp_config: Path, monkeypatch):
             assert (tmp_config / "modules/gaming.nix").read_text() == before
 
     run(scenario())
+
+
+# ── 7. hotkeys: find, vim keys, yank, comment, undo, validate, help ──────────
+
+def test_find_overlay_jumps_and_cycles(tmp_config: Path):
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+
+            await pilot.press("slash")
+            await pilot.pause()
+            find = app.query_one("#find-input")
+            assert find.display and find.has_focus
+
+            await pilot.press(*"lutris")
+            await pilot.pause()
+            node = tree.cursor_node
+            assert isinstance(node.data, PackageData)
+            assert node.data.entry.name == "lutris"
+
+            # Esc closes and returns focus to the tree, cursor stays put.
+            await pilot.press("escape")
+            await pilot.pause()
+            assert not find.display
+            assert tree.has_focus
+            assert tree.cursor_node is node
+
+            # Typing action keys inside find must not trigger actions:
+            # "add" contains 'a' and 'd' — no dialog may open.
+            await pilot.press("slash")
+            await pilot.press(*"add")
+            await pilot.pause()
+            assert len(app.screen_stack) == 1
+            await pilot.press("escape")
+
+    run(scenario())
+
+
+def test_vim_navigation_keys(tmp_config: Path):
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            tree.focus()
+            await pilot.pause()
+
+            await pilot.press("g")
+            assert tree.cursor_line == 0
+            await pilot.press("j")
+            assert tree.cursor_line == 1
+            await pilot.press("k")
+            assert tree.cursor_line == 0
+            await pilot.press("G")
+            assert tree.cursor_line == tree.last_line
+
+            gaming = find_module(tree, "gaming.nix")
+            tree.select_node(gaming)
+            await pilot.pause()
+            await pilot.press("h")
+            assert not gaming.is_expanded
+            await pilot.press("l")
+            assert gaming.is_expanded
+
+    run(scenario())
+
+
+def test_yank_and_help_and_validate(tmp_config: Path):
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            lutris = find_package(find_module(tree, "gaming.nix"), "lutris")
+            tree.select_node(lutris)
+            await pilot.pause()
+
+            await pilot.press("y")
+            assert any("Copied: lutris" in n.message for n in notifications(app))
+
+            await pilot.press("question_mark")
+            await pilot.pause()
+            assert len(app.screen_stack) == 2
+            await pilot.press("escape")
+            await pilot.pause()
+            assert len(app.screen_stack) == 1
+
+            # No nix in this container → warning, not a crash.
+            await pilot.press("v")
+            assert any("nix not found" in n.message for n in notifications(app))
+
+    run(scenario())
+
+
+def test_edit_comment_hotkey(tmp_config: Path):
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            lutris = find_package(find_module(tree, "gaming.nix"), "lutris")
+            tree.select_node(lutris)
+            await pilot.pause()
+
+            await pilot.press("c")
+            await pilot.pause()
+            comment_input = app.screen.query_one("#comment-value", Input)
+            comment_input.value = "my launcher of choice"
+            await pilot.click("#save")
+            await pilot.pause()
+
+            await pilot.click("#apply-btn")
+            for _ in range(3):
+                await pilot.pause()
+
+            text = (tmp_config / "modules/gaming.nix").read_text()
+            assert "lutris" in text and "my launcher of choice" in text
+
+    run(scenario())
+
+
+def test_undo_hotkey_reverts(tmp_config: Path):
+    import subprocess
+
+    for cmd in (
+        ["git", "init", "-q"],
+        ["git", "config", "user.email", "t@t"],
+        ["git", "config", "user.name", "t"],
+        ["git", "add", "-A"],
+        ["git", "commit", "-qm", "init"],
+    ):
+        subprocess.run(cmd, cwd=tmp_config, check=True)
+
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=True)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            original = (tmp_config / "modules/gaming.nix").read_text()
+
+            lutris = find_package(find_module(tree, "gaming.nix"), "lutris")
+            tree.select_node(lutris)
+            await pilot.pause()
+            await pilot.press("space")
+            await pilot.pause()
+            await pilot.click("#apply-btn")
+            for _ in range(3):
+                await pilot.pause()
+            assert "# lutris" in (tmp_config / "modules/gaming.nix").read_text()
+
+            await pilot.press("u")
+            await pilot.pause()
+            await pilot.click("#yes")
+            for _ in range(4):
+                await pilot.pause()
+
+            assert (tmp_config / "modules/gaming.nix").read_text() == original
+
+    run(scenario())
