@@ -1,0 +1,22 @@
+Screen {
+    background: $surface;
+}
+
+#main {
+    height: 1fr;
+}
+
+NavTree {
+    width: 40%;
+    border-right: solid $panel;
+    padding: 0 1;
+}
+
+#detail-panel {
+    width: 60%;
+    padding: 1 2;
+}
+
+#detail {
+    width: 1fr;
+}
