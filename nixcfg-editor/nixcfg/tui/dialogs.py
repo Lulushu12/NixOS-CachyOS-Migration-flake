@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from rich.syntax import Syntax
+from rich.text import Text
 from textual import work
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
@@ -56,7 +57,7 @@ class ConfirmScreen(ModalScreen[bool]):
 
     def compose(self):
         with Vertical():
-            yield Static(self.message, id="confirm-message")
+            yield Static(self.message, id="confirm-message", markup=False)
             with Horizontal(id="confirm-buttons"):
                 yield Button("No", id="no")
                 yield Button("Yes", id="yes", variant="error")
@@ -113,7 +114,7 @@ class DiffScreen(ModalScreen[ApplyResult | None]):
     def compose(self):
         diff_text = self.plan.diff() or "(no changes)"
         with Vertical():
-            yield Static(self.plan.description, id="diff-title")
+            yield Static(self.plan.description, id="diff-title", markup=False)
             with VerticalScroll(id="diff-scroll"):
                 yield Static(Syntax(diff_text, "diff", word_wrap=True), id="diff-body")
             yield LoadingIndicator(id="diff-loading")
@@ -235,7 +236,9 @@ class CommentScreen(ModalScreen[str | None]):
 
     def compose(self):
         with Vertical():
-            yield Static(f"Comment for {self.package_name}", id="comment-title")
+            yield Static(
+                f"Comment for {self.package_name}", id="comment-title", markup=False
+            )
             yield Label("Leave empty to remove the comment")
             yield Input(value=self.current, id="comment-value")
             with Horizontal(id="comment-buttons"):
@@ -435,7 +438,15 @@ class PickPackageScreen(ModalScreen[tuple[str, str] | None]):
         table = self.query_one("#pick-results", DataTable)
         table.clear()
         for r in results:
-            table.add_row(r.attr, r.version, r.description, key=r.attr)
+            # Wrap as Text (not raw str): descriptions come from upstream
+            # nixpkgs metadata and routinely contain '[' / ']', which
+            # DataTable would otherwise try to parse as Rich markup.
+            table.add_row(
+                Text(r.attr),
+                Text(r.version),
+                Text(r.description),
+                key=r.attr,
+            )
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         key = event.row_key.value
@@ -496,7 +507,7 @@ class PackageDetailsScreen(ModalScreen[tuple[str | None, str | None] | None]):
             else self.NO_SECTION
         )
         with Vertical():
-            yield Static(f"Add {self.attr}", id="details-title")
+            yield Static(f"Add {self.attr}", id="details-title", markup=False)
             yield Label("Comment (optional)")
             yield Input(value=self.prefill_comment, id="comment-input")
             yield Label("Section")

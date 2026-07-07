@@ -193,7 +193,9 @@ class NixcfgApp(App):
             yield NavTree("nixcfg", id="nav-tree")
             with VerticalScroll(id="detail-panel"):
                 yield Static(
-                    "Select a node in the tree to see details.", id="detail"
+                    "Select a node in the tree to see details.",
+                    id="detail",
+                    markup=False,
                 )
         yield FindInput(placeholder="find package or module…", id="find-input")
         yield Footer()
@@ -278,13 +280,17 @@ class NixcfgApp(App):
     def _add_plist_node(
         self, parent_widget_node: WidgetTreeNode, node: CoreTreeNode, plist
     ) -> None:
+        # Labels wrapped in Text: Tree.add() runs plain str labels through
+        # Rich markup parsing, and section titles are free text pulled from
+        # `# ── Title ──` comments (or user-typed via "new section…") — they
+        # can contain '[' / ']' and would otherwise crash the tree render.
         plist_widget_node = parent_widget_node.add(
-            plist.attrpath, data=PlistData(tree_node=node, plist=plist)
+            Text(plist.attrpath), data=PlistData(tree_node=node, plist=plist)
         )
         section_nodes: dict[str, WidgetTreeNode] = {}
         for section in plist.sections:
             section_nodes[section.title] = plist_widget_node.add(
-                section.title,
+                Text(section.title),
                 data=SectionData(tree_node=node, plist=plist, title=section.title),
             )
         for entry in plist.packages:
@@ -566,8 +572,16 @@ class NixcfgApp(App):
         self.notify(f"Copied: {text}")
 
     def action_undo(self) -> None:
-        pipe = self._pipeline()
-        found = pipe.last_nixcfg_commit()
+        # `git log` runs as a subprocess — do the lookup off the UI thread
+        # so a slow git call can't freeze the whole app for a keypress.
+        self._find_undo_target()
+
+    @work(thread=True)
+    def _find_undo_target(self) -> None:
+        found = self._pipeline().last_nixcfg_commit()
+        self.call_from_thread(self._show_undo_confirm, found)
+
+    def _show_undo_confirm(self, found: tuple[str, str] | None) -> None:
         if found is None:
             self.notify(
                 "No nixcfg commit to undo (git history has none in the last 50)",

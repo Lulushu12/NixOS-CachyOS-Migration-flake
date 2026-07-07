@@ -21,6 +21,19 @@ def run(coro):
     return asyncio.run(coro)
 
 
+async def wait_until(pilot, predicate, timeout: float = 3.0) -> None:
+    """Pump the event loop until `predicate()` is true, instead of guessing
+    a fixed number of pauses — robust against worker-thread scheduling
+    jitter (e.g. actions that hop to a thread and back via call_from_thread)."""
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + timeout
+    while not predicate():
+        if loop.time() >= deadline:
+            raise AssertionError(f"condition not met within {timeout}s")
+        await pilot.pause()
+        await asyncio.sleep(0.02)
+
+
 def find_node(node, predicate):
     if predicate(node):
         return node
@@ -131,9 +144,7 @@ def test_add_package_search_unavailable(tmp_config: Path, monkeypatch):
 
             # Step 3: diff screen — apply.
             await pilot.click("#apply-btn")
-            await pilot.pause()
-            await pilot.pause()
-            await pilot.pause()
+            await wait_until(pilot, lambda: len(app.screen_stack) == 1)
 
             text = (tmp_config / "home/modules/apps.nix").read_text()
             assert "firefox" in text
@@ -161,9 +172,7 @@ def test_toggle_package_disable(tmp_config: Path):
             await pilot.pause()
 
             await pilot.click("#apply-btn")
-            await pilot.pause()
-            await pilot.pause()
-            await pilot.pause()
+            await wait_until(pilot, lambda: len(app.screen_stack) == 1)
 
             text = (tmp_config / "modules/gaming.nix").read_text()
             assert "# lutris" in text
@@ -386,8 +395,7 @@ def test_edit_comment_hotkey(tmp_config: Path):
             await pilot.pause()
 
             await pilot.click("#apply-btn")
-            for _ in range(3):
-                await pilot.pause()
+            await wait_until(pilot, lambda: len(app.screen_stack) == 1)
 
             text = (tmp_config / "modules/gaming.nix").read_text()
             assert "lutris" in text and "my launcher of choice" in text
@@ -420,16 +428,82 @@ def test_undo_hotkey_reverts(tmp_config: Path):
             await pilot.press("space")
             await pilot.pause()
             await pilot.click("#apply-btn")
-            for _ in range(3):
-                await pilot.pause()
+            await wait_until(pilot, lambda: len(app.screen_stack) == 1)
             assert "# lutris" in (tmp_config / "modules/gaming.nix").read_text()
 
+            # "u" looks up the last commit in a worker thread before the
+            # confirm screen appears — wait for the screen, not a pause count.
             await pilot.press("u")
-            await pilot.pause()
+            await wait_until(pilot, lambda: len(app.screen_stack) == 2)
             await pilot.click("#yes")
-            for _ in range(4):
-                await pilot.pause()
+            await wait_until(
+                pilot,
+                lambda: (tmp_config / "modules/gaming.nix").read_text() == original,
+            )
 
-            assert (tmp_config / "modules/gaming.nix").read_text() == original
+    run(scenario())
+
+
+# ── 8. regression: bracketed content must not crash markup rendering ────────
+
+def test_detail_panel_handles_bracket_content(tmp_config: Path):
+    """hardware-configuration.nix has option values like
+    `[ "fmask=0077" "dmask=0077" ]` — Static() defaults to parsing its
+    content as Rich markup, and '[...]' reads as a markup tag there,
+    raising MarkupError. The detail panel must render this as plain text.
+    """
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            hwconf = find_module(tree, "hardware-configuration.nix")
+            assert hwconf is not None
+            tree.select_node(hwconf)
+            await pilot.pause()  # would raise MarkupError before the fix
+
+            detail = app.query_one("#detail")
+            content = detail._Static__content
+            assert "fmask=0077" in content
+
+    run(scenario())
+
+
+def test_search_results_with_brackets_do_not_crash(tmp_config: Path, monkeypatch):
+    """nixpkgs descriptions routinely contain '[' / ']'; DataTable.add_row
+    also markup-parses plain str cells by default."""
+    from nixcfg.core.search import SearchResult
+
+    monkeypatch.setattr("nixcfg.core.search.available", lambda: True)
+    monkeypatch.setattr(
+        "nixcfg.core.search.search_nixpkgs",
+        lambda *a, **k: [
+            SearchResult(attr="foo", version="1.0", description="A tool for [testing]")
+        ],
+    )
+
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            tree = app.query_one("#nav-tree", Tree)
+            apps_node = find_module(tree, "home/modules/apps.nix")
+            tree.select_node(apps_node)
+            await pilot.pause()
+
+            await pilot.press("a")
+            await pilot.pause()
+            query_input = app.screen.query_one("#pick-query", Input)
+            query_input.value = "foo"
+            from textual.widgets import DataTable
+
+            await pilot.click("#search-btn")
+            # would raise MarkupError before the fix, surfaced as a worker
+            # exception rather than a normal predicate timeout
+            await wait_until(
+                pilot,
+                lambda: app.screen.query_one("#pick-results", DataTable).row_count
+                == 1,
+            )
 
     run(scenario())
