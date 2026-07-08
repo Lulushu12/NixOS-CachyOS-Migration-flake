@@ -185,6 +185,14 @@ class NixcfgApp(App):
         self._find_matches: list[WidgetTreeNode] = []
         self._find_index = 0
 
+    def notify(self, message: str, **kwargs):
+        """Notifications default to markup=True upstream, but everything we
+        notify is dynamic plain text — nix stderr, file paths, package names,
+        EditError messages — where any '[' would raise MarkupError. Default
+        every notification (including dialogs' self.app.notify) to plain."""
+        kwargs.setdefault("markup", False)
+        return super().notify(message, **kwargs)
+
     # ── layout ────────────────────────────────────────────────────────────
 
     def compose(self) -> ComposeResult:

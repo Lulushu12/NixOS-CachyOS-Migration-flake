@@ -507,3 +507,18 @@ def test_search_results_with_brackets_do_not_crash(tmp_config: Path, monkeypatch
             )
 
     run(scenario())
+
+
+def test_notify_with_bracket_content_does_not_crash(tmp_config: Path):
+    """Notifications carry nix stderr / paths / package names; App.notify
+    defaults to markup=True upstream, so '[ "fmask=0077" ]' raised
+    MarkupError. NixcfgApp.notify must default to plain text."""
+    async def scenario():
+        app = NixcfgApp(root=tmp_config, validate=False, commit=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            app.notify('nix error: expected [ "fmask=0077" ] here', severity="error")
+            await pilot.pause()  # rendering the toast would raise before the fix
+            assert any("fmask" in n.message for n in notifications(app))
+
+    run(scenario())
