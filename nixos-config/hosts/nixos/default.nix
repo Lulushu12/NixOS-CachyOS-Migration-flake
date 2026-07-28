@@ -24,6 +24,7 @@
     ../../modules/nvidia.nix        # NVIDIA proprietary driver
     ../../modules/claude.nix        # Claude Desktop (via PR #89 fix branch)
     ../../modules/audio-visualizer.nix  # Audio visualizer widget dependencies
+    ../../modules/hdmi-audio.nix    # HDMI/TV audio: no suspend, lip-sync offset
     # ../../modules/vm.nix          # QEMU/KVM guest tools — only needed in a VM
     # ../../modules/virtualbox.nix  # VirtualBox guest additions — only needed in a VM
   ];

@@ -528,6 +528,54 @@ cat ~/.config/pipewire/pipewire.conf
 systemctl --user restart pipewire
 ```
 
+### HDMI Audio Lags Behind the Picture (TV)
+
+**Problem**: Connected to a TV over HDMI and the sound arrives noticeably
+after the image — often close to a second.
+
+**Cause**: Three things stack up. WirePlumber suspends the HDMI sink when it
+goes quiet and the codec is slow to wake; the ALSA period on the HDMI device
+may be larger than needed; and the TV itself buffers audio while it processes
+the video. On a delay of a second, the TV is almost always the main culprit.
+
+`modules/hdmi-audio.nix` handles the first two automatically. The third needs
+one measured number.
+
+**Solutions**:
+
+```bash
+# 1. Fix it at the TV first — this is where most of the delay comes from.
+#    Enable Game Mode, or set the HDMI input's label/icon to "PC".
+#    Turn off any surround / night-mode DSP.
+#    If sound passes through to a soundbar over ARC/eARC, test the TV's own
+#    speakers to see how much the passthrough is adding.
+
+# 2. Confirm the HDMI sink exists and see what it reports
+hdmi-audio-info
+
+# 3. Measure whatever delay is left
+mpv --audio-device=pulse somevideo.mp4
+#    Press Ctrl+minus / Ctrl+plus until lips match. mpv prints e.g.
+#    "Audio delay: -0.900" — a negative value means audio is late.
+
+# 4. Put the absolute value, in milliseconds, into
+#    nixos-config/modules/hdmi-audio.nix:
+#      tvAudioDelayMs = 900;
+sudo nixos-rebuild switch --flake /etc/nixos/nixos-config#nixos
+
+# 5. Recreate the node so the new value is picked up, then verify
+systemctl --user restart wireplumber
+hdmi-audio-info
+```
+
+Note that this compensation works by telling players how far behind the sink
+really is, so they hold the video back to match. It fixes video playback and
+browsers; it cannot help in games, where there is no video stream to delay —
+for those, Game Mode on the TV is the only real fix.
+
+If mpv wanted a *positive* delay instead, audio is running early. Leave
+`tvAudioDelayMs` at 0 and use the TV's own "audio delay" / "lip sync" slider.
+
 ---
 
 ## Display / GUI Issues
