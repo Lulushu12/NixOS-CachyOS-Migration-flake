@@ -13,7 +13,26 @@
     ./modules/plasma.nix
     ./modules/apps.nix
     ./modules/wayland.nix
+    ./modules/jarvis.nix
   ];
+
+  # ── Voice assistant ────────────────────────────────────────────────────────
+  # The speech services and local model are system-level (modules/jarvis.nix);
+  # this configures the orchestrator that drives them. Full option reference and
+  # setup notes: JARVIS.md at the repo root.
+  services.jarvis = {
+    enable        = true;
+    userName      = "Radu";
+    assistantName = "JARVIS";
+
+    # Tone and standing preferences. This is the whole personality knob.
+    personality = ''
+      Be dry, precise, and unhurried. Skip pleasantries and filler — no "certainly",
+      no "I'd be happy to". A little sardonic is welcome; enthusiasm is not.
+      If a request is ambiguous in a way that changes what you would do, ask.
+      Otherwise pick the sensible reading and act.
+    '';
+  };
 
   # ── Session environment variables ──────────────────────────────────────────
   home.sessionVariables = {

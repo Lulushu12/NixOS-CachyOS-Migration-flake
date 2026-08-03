@@ -1,0 +1,18 @@
+{
+    "KPlugin": {
+        "Id": "org.jarvis.hud",
+        "Name": "JARVIS HUD",
+        "Description": "Live state, waveform, and transcript for the JARVIS voice assistant",
+        "Icon": "audio-input-microphone",
+        "Version": "1.0",
+        "License": "MIT",
+        "Category": "System Information",
+        "Authors": [
+            {
+                "Name": "radu"
+            }
+        ]
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
