@@ -20,7 +20,7 @@
     EDITOR  = "kate";
     VISUAL  = "kate";
     BROWSER = "brave";
-    NIXOS_OZONE_EL     = "1";  # Native Wayland for Electron apps (Obsidian, etc.)
+    NIXOS_OZONE_WL     = "1";  # Native Wayland for Electron apps (Obsidian, Antigravity, etc.)
     MOZ_ENABLE_WAYLAND = "1";  # Native Wayland for Firefox-based browsers
     QT_QPA_PLATFORM    = "wayland;xcb";
   };

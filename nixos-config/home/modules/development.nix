@@ -36,6 +36,24 @@
     lazygit
     git-lfs
 
+    # ── Editors / IDEs ────────────────────────────────────────────────────────
+    # Google Antigravity — agentic IDE (VS Code fork, unfree binary release).
+    #
+    # `.fhsWithPackages` wraps it in an FHS sandbox instead of installing the
+    # bare derivation. Two reasons this matters here:
+    #   1. Marketplace extensions ship pre-built ELF binaries that expect
+    #      /usr/lib paths. Outside FHS they fail with "cannot open shared
+    #      object file" and can only be fixed by patching them in nixpkgs.
+    #   2. Antigravity's browser agent drives Playwright, which is hardcoded to
+    #      look for a browser at /opt/google/chrome/chrome. The nixpkgs wrapper
+    #      symlinks the first Chrome/Chromium it finds *inside the sandbox* to
+    #      that path — so the browser has to be listed below, not just be
+    #      installed on the host.
+    #
+    # Drop the google-chrome line (use plain `antigravity.fhs`) if you do not
+    # want the browser agent; Brave/Vivaldi in apps.nix are not visible to it.
+    (antigravity.fhsWithPackages (ps: with ps; [ google-chrome ]))
+
   ];
 
   # ── Git ───────────────────────────────────────────────────────────────────
