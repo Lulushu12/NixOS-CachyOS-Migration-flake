@@ -4,48 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A **modular NixOS flake configuration** for a personal system (CachyOS migration target). Features dual desktop environments (KDE Plasma & GNOME), gaming setup with NVIDIA RTX 2070 SUPER, and 317+ development packages. The flake is organized into reusable system modules, hardware-specific configs, and home-manager configurations for user-level customization.
+A **modular NixOS flake configuration** for a personal system (migrated from CachyOS), single host named `nixos`, single user `radu`. KDE Plasma 6 (Wayland) is the desktop, with an NVIDIA RTX 2070 SUPER, a gaming stack (Steam/Proton/Lutris), and a development toolchain. The flake lives in `nixos-config/` (the repo root also holds top-level docs — see below) and is split into system modules, a host definition, and per-user home-manager modules.
 
-- **Main entry**: `flake.nix` (defines nixpkgs/home-manager inputs and outputs)
-- **Host config**: `hosts/cachyos-to-nix/` (applies all modules, hardware, networking)
-- **System modules**: `modules/` (self-contained subsystem configs: desktop, gaming, dev-tools, etc.)
-- **User config**: `home-manager/` (user-level packages, dotfiles, per-app settings)
+- **Main entry**: `nixos-config/flake.nix` (declares nixpkgs, home-manager, claude-desktop, plasma-manager inputs and the `nixos` output)
+- **Host config**: `nixos-config/hosts/nixos/` (imports all modules, hardware, users, networking, state version)
+- **System modules**: `nixos-config/modules/` (self-contained subsystem configs: desktop, gaming, dev-tools, nvidia, etc.)
+- **User config**: `nixos-config/home/` (home-manager: dotfiles, per-app settings, user packages)
+- **Dotfiles staging**: `nixos-config/dotfiles/` (currently placeholder `.gitkeep` files for themes/plasmoids/icons to be added later)
 
 ## Essential Commands
+
+All commands assume this repo is checked out at `/etc/nixos/nixos-config` on the target machine (see the alias note below if it's elsewhere).
 
 ### System Rebuilding (Most Common)
 
 ```bash
 # Apply changes and activate immediately
-sudo nixos-rebuild switch --flake /etc/nixos#cachyos-to-nix
+sudo nixos-rebuild switch --flake /etc/nixos/nixos-config#nixos
 
-# From /etc/nixos directory (shorter):
-cd /etc/nixos && sudo nixos-rebuild switch --flake .#cachyos-to-nix
+# From the nixos-config directory (shorter):
+cd /etc/nixos/nixos-config && sudo nixos-rebuild switch --flake .#nixos
 
-# Test changes without activating
-sudo nixos-rebuild test --flake .#cachyos-to-nix
+# Test changes without persisting (reverts on reboot)
+sudo nixos-rebuild test --flake .#nixos
+
+# Build only, don't activate
+sudo nixos-rebuild build --flake .#nixos
 
 # Rollback to previous generation
 sudo nixos-rebuild switch --rollback
 ```
 
-### Home-Manager (User-Level Config)
-
-```bash
-# Apply user-level changes
-home-manager switch --flake /etc/nixos#radu
-
-# From /etc/nixos:
-home-manager switch --flake .#radu
-```
+Home-manager is integrated into the system flake (`useGlobalPkgs`/`useUserPackages` in `flake.nix`), so `nixos-rebuild switch` already applies user-level changes too — there is no separate `home-manager switch` step. A `rebuild` shell alias is defined in `home/radu.nix` for the full command above.
 
 ### Flake Updates & Maintenance
 
 ```bash
-# Update all inputs to latest versions
+# Update all inputs to latest versions (rewrites flake.lock)
 nix flake update
 
-# Update specific input (e.g., nixpkgs)
+# Update just nixpkgs (the pin documented in flake.nix)
 nix flake update nixpkgs
 
 # Check flake syntax/validity
@@ -54,6 +52,8 @@ nix flake check
 # Show available configurations
 nix flake show
 ```
+
+`nixpkgs` is pinned to a specific commit in `flake.nix` (not tracking `nixos-unstable` live) — intentional, to avoid surprise rebuilds. Advance it by editing the pinned commit hash and deleting `flake.lock`, per the comment in `flake.nix`.
 
 ### Cleanup & Optimization
 
@@ -65,112 +65,126 @@ nix-collect-garbage -d
 nix-collect-garbage -d && nix-store --optimise
 ```
 
+Automatic weekly GC (`--delete-older-than 14d`) is already configured in `hosts/nixos/default.nix`.
+
 ## Code Architecture
 
 ### Directory Structure
 
 ```
-flake.nix                          # Entry point: declares inputs, outputs, host config
-├── hosts/cachyos-to-nix/
-│   ├── default.nix               # Host configuration: imports all modules
-│   ├── hardware.nix              # Storage, boot, CPU microcode (MUST BE UPDATED)
-│   └── networking.nix            # Hostname, firewall, SSH
+CLAUDE.md, README.md, MODULES.md, SETUP.md, QUICK-REFERENCE.md, TROUBLESHOOTING.md   # top-level docs
+sovereignty/                          # digital sovereignty plan (docs only) — see below
+nixos-config/
+├── flake.nix                        # Entry point: inputs (nixpkgs, home-manager, claude-desktop, plasma-manager), outputs
+├── hosts/nixos/
+│   ├── default.nix                  # Host config: module imports, users, networking, nix settings, state version
+│   └── hardware-configuration.nix   # Auto-generated by the NixOS installer — DO NOT edit manually
 │
-├── modules/                       # System-level modules (reusable)
-│   ├── system/
-│   │   ├── boot.nix              # Bootloader, kernel, GRUB/systemd-boot
-│   │   ├── localization.nix      # Timezone, locale, keyboard, fonts
-│   │   └── services.nix          # PipeWire, Bluetooth, CUPS, Docker, UDisks2, etc.
-│   ├── hardware/
-│   │   └── nvidia.nix            # NVIDIA drivers, CUDA, power management
-│   ├── desktop/
-│   │   ├── kde.nix               # KDE Plasma 6 (display-server, packages)
-│   │   └── gnome.nix             # GNOME desktop (sessionVariables, packages)
-│   ├── gaming/
-│   │   └── gaming.nix            # Steam, Lutris, Proton, Wine, MangoHUD, 32-bit libs
-│   ├── development/
-│   │   └── dev-tools.nix         # Compilers, build tools, IDEs, language servers
-│   └── shell/
-│       └── shell-config.nix      # System-wide shell settings (NixOS-managed)
+├── modules/                          # System-level modules (imported by hosts/nixos/default.nix)
+│   ├── common.nix                   # Locale, timezone, fonts, audio (PipeWire), Bluetooth, Tailscale, Jellyfin
+│   ├── desktop.nix                  # KDE Plasma 6 (Wayland/X11 sessions, Flatpak)
+│   ├── development.nix              # System-level compilers, debuggers, build tools
+│   ├── gaming.nix                   # Steam, Proton, Lutris, GameMode, MangoHud, RetroArch
+│   ├── nvidia.nix                   # NVIDIA proprietary/open driver config
+│   ├── claude.nix                   # Claude Desktop (via claude-desktop flake input)
+│   ├── audio-visualizer.nix         # System deps for a KDE Plasma audio-visualizer widget
+│   ├── vm.nix                       # QEMU/KVM guest tools — commented out, only needed in a VM
+│   ├── virtualbox.nix               # VirtualBox guest additions — commented out, only needed in a VM
+│   └── sovereignty/                 # Opt-in "digital sovereignty" module stubs — all disabled by default
 │
-└── home-manager/                  # User-level configuration (per-user dotfiles & packages)
-    ├── default.nix               # Main home-manager config, global packages
-    └── modules/
-        ├── shell/                # Zsh, Powerlevel10k, aliases, git config
-        ├── desktop/              # XDG dirs, GTK/Qt theming, KDE/GNOME specifics
-        ├── development/          # User dev tools, language runtimes, formatters
-        ├── media/                # GIMP, Blender, Krita, KDenlive, Audacity
-        └── gaming/               # MangoHUD config, game-specific settings
+├── home/                             # Home-manager (per-user config, imported from flake.nix)
+│   ├── radu.nix                     # Entry point: session vars, imports of home/modules/*
+│   └── modules/
+│       ├── shell.nix                # Shell packages/aliases
+│       ├── terminal.nix             # Kitty terminal config
+│       ├── development.nix          # User-level language runtimes (Python, Node, Rust, Go, etc.)
+│       ├── desktop.nix               # Qt theming (GTK left to KDE Plasma itself)
+│       ├── plasma.nix               # Declarative KDE Plasma config via plasma-manager
+│       ├── apps.nix                  # User-facing application packages (browsers, etc.)
+│       └── wayland.nix               # Wayland compositor stack (wofi/mako/waybar/niri) — stubbed
+│
+├── dotfiles/                         # Staged dotfiles (themes, plasmoids, icons) — currently placeholders
+└── scripts/
+    └── toggle-audio-port.sh
 ```
 
 ### Configuration Flow
 
-1. **`flake.nix`** declares inputs (nixpkgs-unstable, home-manager) and outputs a nixosConfiguration named `cachyos-to-nix`
-2. **`hosts/cachyos-to-nix/default.nix`** (referenced in flake) imports all modules and sets `system.stateVersion`
-3. **System modules** (`modules/*/`) configure system-wide services, packages, and settings
-4. **Home-manager** (integrated in flake) manages user-level configs, dotfiles, and per-app settings
-5. **Rebuild** compiles everything into `/nix/store`, symlinks to `/run/current-system`, and activates
+1. **`nixos-config/flake.nix`** declares inputs (pinned nixpkgs commit, home-manager, claude-desktop, plasma-manager) and outputs a single `nixosConfigurations.nixos`
+2. **`hosts/nixos/default.nix`** imports all system modules, sets users/networking/nix settings, and wires in home-manager (`home-manager.users.radu = import ../../home/radu.nix`) directly — home-manager is not a separate flake output
+3. **System modules** (`modules/*.nix`) configure system-wide services, packages, and settings; each is self-contained and can be toggled via the `imports` list
+4. **Home-manager** (`home/radu.nix` + `home/modules/*.nix`) manages per-user dotfiles, packages, and app config, applied in the same activation as the system rebuild
+5. **Rebuild** compiles everything into `/nix/store`, symlinks to `/run/current-system`, and activates both system and home-manager generations together
 
 ### Key Design Patterns
 
-- **Module isolation**: Each system module is self-contained (e.g., `modules/gaming/gaming.nix` has all gaming packages/config in one file)
-- **Dual DE support**: Both KDE and GNOME modules are imported; user switches at SDDM login without rebuild
-- **Hardware abstraction**: `hardware.nix` is separated from `default.nix` to allow easy hardware-specific customization
-- **Home-manager integration**: Home-manager config is defined in `flake.nix` and points to `home-manager/` directory
-- **Unfree packages**: `nixpkgs.config.allowUnfree = true` in host config allows proprietary software (drivers, Steam, etc.)
+- **Module isolation**: each system module is self-contained (e.g. `modules/gaming.nix` has all gaming packages/config in one file)
+- **Single DE**: KDE Plasma 6 only (Wayland preferred, X11 fallback available at the SDDM session picker) — there is no GNOME module in this repo despite older docs suggesting dual-DE
+- **Hardware separation**: `hosts/nixos/hardware-configuration.nix` is auto-generated and kept separate from hand-written config
+- **Combined system + home-manager activation**: no separate `home-manager switch` step — one `nixos-rebuild switch` does both
+- **Unfree packages**: `nixpkgs.config.allowUnfree = true` in `hosts/nixos/default.nix` allows proprietary software (NVIDIA drivers, Steam, etc.); specific insecure packages are allow-listed individually via `permittedInsecurePackages`
+- **Opt-in, disabled-by-default modules**: features not ready to run permanently (VM guest tools, sovereignty stack) are imported as commented-out lines in `hosts/nixos/default.nix`, or defined with `enable = false` internally — uncomment/flip deliberately rather than deleting/re-adding
 
 ## Important Files
 
 ### Must-Update Files
 
-- **`hosts/cachyos-to-nix/hardware.nix`**: Must match actual hardware (UUIDs, boot partition, CPU type). Run `blkid` and `lsblk` to find values.
-- **`hosts/cachyos-to-nix/networking.nix`**: Hostname ("CachyOS-Desktop" by default), firewall rules, SSH config.
+- **`nixos-config/hosts/nixos/hardware-configuration.nix`**: auto-generated — regenerate with `nixos-generate-config` on new hardware, don't hand-edit.
+- **`nixos-config/hosts/nixos/default.nix`**: hostname, filesystem mounts (e.g. the `/home/radu/HDD` UUID mount), firewall, SSH, user account — update to match actual hardware/network.
 
 ### Commonly Modified Files
 
-- **Add system packages**: Add to `environment.systemPackages` in appropriate module file (e.g., `modules/development/dev-tools.nix`)
-- **Add user packages**: Add to `home.packages` in `home-manager/default.nix` or related module
-- **Change desktop environment**: Edit `hosts/cachyos-to-nix/default.nix` imports (comment out `kde.nix` or `gnome.nix`)
-- **Customize shell**: Edit `home-manager/modules/shell/default.nix` (Zsh config, aliases, git)
+- **Add system packages**: add to `environment.systemPackages` in the appropriate module file (e.g. `modules/development.nix`), or a new module under `modules/`
+- **Add user packages**: add to `home.packages` in the relevant `home/modules/*.nix` (e.g. `apps.nix` for GUI apps, `development.nix` for language tooling)
+- **Enable/disable a module**: edit the `imports` list in `hosts/nixos/default.nix` — comment out to disable, uncomment to enable
+- **Customize shell**: edit `home/modules/shell.nix`
 
 ## Common Tasks
 
 ### Adding a System Package
 
-1. Identify which module it belongs to (e.g., if it's a game, use `modules/gaming/gaming.nix`)
-2. Edit the module and add package name to `environment.systemPackages` list
-3. Rebuild: `sudo nixos-rebuild switch --flake .#cachyos-to-nix`
+1. Identify which module it belongs to (e.g. a game → `modules/gaming.nix`), or create a new module under `modules/`
+2. Add the package name to that module's `environment.systemPackages` list
+3. Rebuild: `sudo nixos-rebuild switch --flake .#nixos`
 
 ### Adding a User-Level Package
 
-1. Edit `home-manager/default.nix` or relevant module in `home-manager/modules/`
-2. Add package name to `home.packages` list
-3. Apply: `home-manager switch --flake /etc/nixos#radu`
+1. Edit the relevant file in `home/modules/` (or `home/radu.nix` directly for session-wide settings)
+2. Add the package name to `home.packages`
+3. Rebuild: `sudo nixos-rebuild switch --flake .#nixos` (home-manager applies in the same activation)
 
 ### Enabling/Disabling a Feature
 
-Edit `hosts/cachyos-to-nix/default.nix` imports:
-- **Comment out** to disable: `# ../../modules/gaming/gaming.nix`
-- **Uncomment** to enable: `../../modules/gaming/gaming.nix`
+Edit `hosts/nixos/default.nix` imports:
+- **Comment out** to disable: `# ../../modules/gaming.nix`
+- **Uncomment** to enable: `../../modules/gaming.nix`
 - Rebuild after changes
 
-### Switching Between KDE and GNOME
+Some modules (VM guest tools, `modules/sovereignty/*`) are intentionally commented out or internally disabled (`enable = false`) — see the comments next to each import in `hosts/nixos/default.nix` before flipping them on.
 
-Both are installed. At SDDM login screen, click session dropdown (bottom-right), select "Plasmawayland" (KDE) or "GNOME", then log in. **No rebuild needed.**
+### Switching Between Plasma Wayland and X11
+
+Both sessions are available at the SDDM login screen. Click the session dropdown (bottom-right corner), pick "Plasma (Wayland)" (default) or "Plasma (X11)" (GPU-issue fallback), then log in. **No rebuild needed.**
+
+## Digital Sovereignty Plan
+
+`sovereignty/` (repo root, alongside this file) tracks self-hosting / privacy / de-googling options being considered for this system, organized one folder per category (self-hosting, networking-dns-vpn, identity-auth-secrets, comms-browser), each with a tool-comparison table and a recommendation. Matching NixOS module stubs live in `nixos-config/modules/sovereignty/*.nix` — all `enable = false` and not imported by default; see `sovereignty/README.md` for the rollout plan before enabling anything.
 
 ## Reference Files
 
-- **README.md**: Full feature overview and installation guide
-- **QUICK-REFERENCE.md**: Comprehensive command cheat sheet (system, package, desktop, gaming, shell, config)
-- **MODULES.md**: Detailed module documentation with customization examples
-- **SETUP.md**: Step-by-step initial installation guide
-- **TROUBLESHOOTING.md**: Diagnosis and fixing common issues
+- **README.md**: full feature overview and installation guide
+- **QUICK-REFERENCE.md**: comprehensive command cheat sheet (system, package, desktop, gaming, shell, config)
+- **MODULES.md**: detailed module documentation with customization examples
+- **SETUP.md**: step-by-step initial installation guide
+- **TROUBLESHOOTING.md**: diagnosis and fixing common issues
+
+Note: these reference docs were written for an earlier `hosts/cachyos-to-nix/` / dual-KDE-GNOME layout and have not all been reconciled with the current `hosts/nixos/` single-KDE structure described above — treat this file as the source of truth for paths and prefer verifying against the actual tree before relying on details in those docs.
 
 ## Development Notes
 
 ### Module Creation Pattern
 
-When adding a new module (e.g., `modules/category/newmodule.nix`):
+When adding a new module (e.g. `modules/newmodule.nix`):
 
 ```nix
 { config, pkgs, ... }:
@@ -179,33 +193,33 @@ When adding a new module (e.g., `modules/category/newmodule.nix`):
   environment.systemPackages = with pkgs; [
     # Packages here
   ];
-  
+
   # Configuration here
   # services.yourservice.enable = true;
   # etc.
 }
 ```
 
-Then import it in `hosts/cachyos-to-nix/default.nix`:
+Then import it in `hosts/nixos/default.nix`:
 
 ```nix
 imports = [
   # ... existing
-  ../../modules/category/newmodule.nix
+  ../../modules/newmodule.nix
 ];
 ```
 
 ### Testing Changes
 
-- Use `sudo nixos-rebuild test --flake .#cachyos-to-nix` to test without persisting (reverts after reboot)
-- Use `sudo nixos-rebuild build --flake .#cachyos-to-nix` to build but not activate
-- Use rollback if something breaks: `sudo nixos-rebuild switch --rollback`
+- `sudo nixos-rebuild test --flake .#nixos` — test without persisting (reverts on reboot)
+- `sudo nixos-rebuild build --flake .#nixos` — build but not activate
+- `sudo nixos-rebuild switch --rollback` — roll back if something breaks
 
 ### Debugging Build Issues
 
 ```bash
 # Show detailed error messages
-sudo nixos-rebuild switch --flake .#cachyos-to-nix --show-trace
+sudo nixos-rebuild switch --flake .#nixos --show-trace
 
 # Check flake syntax
 nix flake check
@@ -216,15 +230,16 @@ nix eval .
 
 ## Key Behaviors
 
-- **State version**: Set to "24.05" in `hosts/cachyos-to-nix/default.nix`. Change only when upgrading NixOS releases.
+- **State version**: `system.stateVersion = "24.11"` in `hosts/nixos/default.nix` (home-manager's `home.stateVersion` in `home/radu.nix` matches). Change only when upgrading NixOS releases, never to fix an unrelated issue.
 - **Auto-optimization**: Nix store automatically optimizes on rebuild (`auto-optimise-store = true`)
-- **Unfree packages enabled**: NVIDIA drivers, Steam, and other proprietary software work without additional config
-- **Home-manager backups**: Files are backed up with `.backup` extension on conflicts during switch
-- **Generations**: Both system and home-manager maintain rollback points (accessible via `nix-env --switch-generation`)
+- **Unfree packages enabled**: NVIDIA drivers, Steam, and other proprietary software work without additional per-package config; a couple of known-insecure packages (e.g. an Electron version needed by Obsidian/Vesktop) are explicitly allow-listed
+- **Home-manager backups**: conflicting dotfiles are backed up with a `.backup` extension on activation (`home-manager.backupFileExtension` in `flake.nix`)
+- **Custom build directory**: Nix build sandboxes are redirected to the HDD mount (see `nix.settings.build-dir` in `hosts/nixos/default.nix`) to avoid filling the root partition during large builds (Plasma, LibreOffice, etc.)
+- **Generations**: both system and home-manager (applied together) maintain rollback points
 
 ## Performance & Gaming
 
-- NVIDIA RTX 2070 SUPER with proprietary drivers (configured in `modules/hardware/nvidia.nix`)
-- MangoHUD and GameMode enabled in `modules/gaming/gaming.nix` for performance monitoring
-- Steam and Proton GE configured for game compatibility
+- NVIDIA RTX 2070 SUPER with proprietary/open drivers (configured in `modules/nvidia.nix`)
+- MangoHud and GameMode enabled in `modules/gaming.nix` for performance monitoring
+- Steam and Proton (GE via `protonup-qt`) configured for game compatibility
 - 32-bit libraries included for legacy games
