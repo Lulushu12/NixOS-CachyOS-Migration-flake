@@ -6,15 +6,35 @@ flake (`nixos-config/`). The goal isn't ideological purity — it's reducing
 dependence on third parties for things that matter (backups, chat, DNS,
 secrets) while keeping the system boring enough to actually maintain solo.
 
+## Status: all four categories decided, nothing implemented yet
+
+Every category below has a locked-in decision, reached by weighing actual
+needs (device count, downtime tolerance, autofill, sharing) against the
+governance/company track record of each option — see each category's
+README for the reasoning and the diligence behind picks like Vaultwarden,
+Headscale, and AdGuard Home. **Nothing is enabled yet**: all module stubs
+in `nixos-config/modules/sovereignty/*.nix` still have `enable = false`,
+and their imports are still commented out in `hosts/nixos/default.nix`.
+Flipping them on is a separate, deliberate next step.
+
+| Category | Decision | Status |
+|---|---|---|
+| Identity, auth & secrets | Vaultwarden (Tailscale-only) + official Bitwarden apps | Decided, not enabled |
+| Networking, DNS & VPN | Headscale + AdGuard Home + Unbound | Decided, not enabled |
+| Self-hosting | Syncthing + restic + Immich + Forgejo + scoped-down Nextcloud (public outbox) | Decided; Nextcloud's public exposure (domain/reverse proxy) still needs planning |
+| Comms & browser | Zen (kept, to be hardened) + self-hosted SearXNG + Signal (kept, no forced migration) | Decided, not enabled |
+
 ## How this is organized
 
 Each category below has its own folder with a table of candidate tools,
-their nixpkgs status, and notes. Matching NixOS module *stubs* live in
-`nixos-config/modules/sovereignty/*.nix` — they're written but disabled
-(`enable = false` / not imported), so nothing changes on your next rebuild
-until you deliberately opt in. To enable one:
+the diligence behind the pick (including who's actually behind each
+project — company, VC backing, nonprofit, or pure community), and the
+final decision. Matching NixOS module *stubs* live in
+`nixos-config/modules/sovereignty/*.nix` — written but disabled, so
+nothing changes on your next rebuild until you deliberately opt in. To
+enable one:
 
-1. Read the category doc, pick a tool.
+1. Read the category doc for the "Decision" section — the reasoning is there.
 2. Flip the relevant option to `enable = true` in the module file.
 3. Uncomment its import line in `nixos-config/hosts/nixos/default.nix`.
 4. `sudo nixos-rebuild switch --flake /etc/nixos/nixos-config#nixos`.
@@ -26,13 +46,12 @@ tracked here so they're not duplicated below:
 
 | Tool | Where | What it replaces |
 |---|---|---|
-| Tailscale | `nixos-config/modules/common.nix` | Exposing services directly to the internet / relying on a static public IP |
+| Tailscale (client) | `nixos-config/modules/common.nix` | Exposing services directly to the internet / relying on a static public IP |
 | Jellyfin | `nixos-config/modules/common.nix` | Netflix/Plex-style subscription media, keeps your library local |
 
-Note: Tailscale's *client* is FOSS but its coordination server is Tailscale's
-own SaaS. That's fine for convenience — if full independence from it matters
-later, `sovereignty/networking-dns-vpn/` covers self-hosting the coordination
-layer with Headscale.
+Note: Tailscale's *coordination server* is being replaced by self-hosted
+Headscale (see `networking-dns-vpn/`) — the client itself stays the same
+either way, since it's already FOSS.
 
 ## Categories
 
@@ -41,21 +60,36 @@ layer with Headscale.
 - [`identity-auth-secrets/`](./identity-auth-secrets/README.md) — password manager, SSO, secrets-in-git
 - [`comms-browser/`](./comms-browser/README.md) — chat, search, browser, email
 
-## Suggested rollout order
+## Implementation order
 
-Roughly cheapest-and-safest first. No deadline — pick items as they become
-useful rather than doing all of them at once.
+Roughly cheapest-and-safest first, matching the decisions above:
 
-1. **Password manager** (Vaultwarden) — single most impactful, low maintenance, one systemd service.
-2. **DNS blocking** (AdGuard Home or Blocky) — set-and-forget, immediate benefit.
-3. **File sync** (Syncthing) — replaces Dropbox/Google Drive for anything that doesn't need public sharing.
-4. **Backups** (restic to a remote you control) — do this before you have data you'd regret losing.
-5. **Photos** (Immich) — only once storage/backup story above is solid.
-6. Everything else (Matrix, SearXNG, Headscale, SSO) — opt in per interest, these have real ongoing maintenance cost.
+1. **Vaultwarden** (identity) — single highest-leverage item, one systemd service, Tailscale-only.
+2. **Headscale + AdGuard Home + Unbound** (networking) — set-and-forget once running, and Headscale first means everything after it can assume the tailnet is self-hosted.
+3. **Syncthing + restic** (self-hosting) — replaces Dropbox/Google Drive and covers backups before anything else stores data worth losing.
+4. **SearXNG** (comms) — stateless, near-zero maintenance, safe to add any time.
+5. **Immich + Forgejo** (self-hosting) — once the backup story above is solid.
+6. **Nextcloud outbox** (self-hosting) — blocked on the domain/reverse-proxy/ACME planning session, since it's the one component that needs real public exposure.
+
+## Diligence approach
+
+For anything with real day-to-day reliance (password vault, DNS, VPN
+coordination), we checked who's actually behind it — VC-backed company,
+bootstrapped company, nonprofit, or pure community project — because that
+shapes long-term risk (acquisition, monetization pivots, abandonment)
+differently than technical merits alone. Notable findings baked into the
+decisions:
+
+- **Bitwarden Inc.** (whose open-source client apps Vaultwarden's decision relies on) is VC/PE-backed and went through a leadership shakeup in 2026 with M&A-flavored optics. Accepted risk, mitigated by the code being open source and the vault being exportable/forkable — see `identity-auth-secrets/README.md`.
+- **AdGuard**, **Headscale**, and **Unbound** (NLnet Labs, an actual nonprofit) all checked out clean — no VC, no red flags.
+- **Forgejo** exists specifically because its community forked away from Gitea Ltd. (a for-profit company) to stay under nonprofit governance (Codeberg e.V.) — directly aligned with these values.
+- **Nextcloud GmbH** has a similar origin: founded when Frank Karlitschek left ownCloud Inc. over its VC-driven commercial drift; bootstrapped and profitable since 2016.
+- **Immich** joined FUTO (a nonprofit) in 2024 specifically to fund development without paid tiers or closed features.
+- **Zen Browser** is fully community-run (no company, no VC) — see `comms-browser/README.md` for how it compares to LibreWolf and how to hardened it further.
 
 ## A note on realism
 
-Some categories (self-hosted email in particular) are covered in the docs
-for completeness but *not* recommended to actually run solo — deliverability
-and spam-fighting infrastructure is a full-time job. Each doc calls out
-where "sovereign" and "sane" diverge.
+Some categories (self-hosted email, self-hosted chat for reaching
+WhatsApp/Instagram/Messenger contacts) were explicitly ruled out — see
+each category doc for why. Sovereignty here means owning what you
+realistically control, not chasing purity where the tradeoff isn't worth it.

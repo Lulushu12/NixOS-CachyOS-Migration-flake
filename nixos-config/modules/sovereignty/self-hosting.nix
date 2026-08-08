@@ -1,5 +1,13 @@
-# Digital sovereignty: self-hosting (NAS/sync, backups, photos).
-# See sovereignty/self-hosting/README.md for the full comparison and rollout order.
+# Digital sovereignty: self-hosting (NAS/sync, backups, photos, git).
+# See sovereignty/self-hosting/README.md for the decision writeup.
+#
+# DECIDED: Syncthing + restic + Immich + Forgejo for personal/private use
+# (Tailscale/Headscale-only, never exposed). Nextcloud was also decided on,
+# scoped down to Files+Sharing only, as a deliberately public "outbox" for
+# casual sharing with people outside the tailnet — fed by a one-way
+# ~/ToShare/ folder, not given access to the rest of this data. It's NOT
+# stubbed below yet: it needs a domain + reverse proxy + ACME cert, which
+# is still an open planning question (see the README).
 #
 # Everything here is off by default. Flip `enable = true` on the pieces you
 # want, then uncomment this module's import in hosts/nixos/default.nix.
@@ -40,5 +48,15 @@
     enable = false;
     mediaLocation = "/home/radu/HDD/immich";
     openFirewall = true;
+  };
+
+  # ── Forgejo (self-hosted git, GitHub replacement for private repos) ──────────
+  # Tailscale/Headscale-only — no reason to expose this publicly.
+  services.forgejo = {
+    enable = false;
+    settings.server = {
+      DOMAIN = "git.internal";
+      HTTP_PORT = 3001;
+    };
   };
 }

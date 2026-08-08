@@ -1,41 +1,38 @@
 # Digital sovereignty: DNS blocking and recursive resolution.
-# See sovereignty/networking-dns-vpn/README.md for the full comparison.
+# See sovereignty/networking-dns-vpn/README.md for the decision writeup.
 #
-# Pick ONE of Blocky/AdGuard Home, not both — they both want port 53.
+# DECIDED: AdGuard Home (dashboard) with Unbound as its upstream resolver —
+# picked over Blocky specifically for the web UI/query-log dashboard.
 # Off by default; uncomment this module's import in hosts/nixos/default.nix
-# once you've picked one.
+# once ready.
 
 { pkgs, ... }:
 
 {
-  # ── Blocky (DNS-level ad/tracker blocking) ────────────────────────────────────
-  # Config-file based, no web UI. Point your router/NetworkManager DNS at
-  # 127.0.0.1 once this is enabled and working.
-  services.blocky = {
+  # ── AdGuard Home (DNS-level ad/tracker blocking, with dashboard) ─────────────
+  # Web UI at http://localhost:3000 for first-run setup (blocklists, upstream).
+  # Point your router/NetworkManager DNS at this host once enabled.
+  services.adguardhome = {
     enable = false;
+    openFirewall = true;
     settings = {
-      ports.dns = 53;
-      upstreams.groups.default = [
-        # Cloudflare/Google as a starting point — swap for Unbound below once
-        # that's running, to stop relying on any third-party resolver at all.
-        "1.1.1.1"
-        "8.8.8.8"
-      ];
-      blocking.blackLists.ads = [
-        "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
-      ];
+      dns = {
+        # Unbound below, not Cloudflare/Google — no third party ever sees
+        # the query stream.
+        upstream_dns = [ "127.0.0.1:5053" ];
+      };
     };
   };
 
-  # ── Unbound (full recursive resolver — no third-party DNS dependency) ────────
-  # Queries root/TLD servers directly instead of forwarding to Cloudflare/Google.
-  # Slower first lookups, but nobody downstream sees your query stream.
+  # ── Unbound (full recursive resolver — AdGuard Home's upstream) ──────────────
+  # Queries root/TLD servers directly instead of forwarding to a public
+  # resolver. Slower first lookups, but nobody downstream sees your queries.
   services.unbound = {
     enable = false;
     settings = {
       server = {
         interface = [ "127.0.0.1" ];
-        port = 5053; # keep off 53 so it can sit behind Blocky as its upstream
+        port = 5053; # keep off 53 — AdGuard Home owns that port
       };
     };
   };
