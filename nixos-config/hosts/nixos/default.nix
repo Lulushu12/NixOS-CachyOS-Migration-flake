@@ -26,6 +26,15 @@
     ../../modules/audio-visualizer.nix  # Audio visualizer widget dependencies
     # ../../modules/vm.nix          # QEMU/KVM guest tools — only needed in a VM
     # ../../modules/virtualbox.nix  # VirtualBox guest additions — only needed in a VM
+
+    # ── Digital sovereignty (opt-in) ─────────────────────────────────────────
+    # Disabled internally (enable = false) even when imported — see
+    # sovereignty/README.md for the plan and sovereignty/<category>/README.md
+    # for what each module offers before uncommenting.
+    # ../../modules/sovereignty/self-hosting.nix     # Syncthing, restic, Immich
+    # ../../modules/sovereignty/networking.nix        # Blocky/Unbound DNS
+    # ../../modules/sovereignty/identity-secrets.nix  # Vaultwarden
+    # ../../modules/sovereignty/comms-browser.nix     # SearXNG, Matrix Conduit
   ];
 
   # ── Unfree packages ──────────────────────────────────────────────────────────
