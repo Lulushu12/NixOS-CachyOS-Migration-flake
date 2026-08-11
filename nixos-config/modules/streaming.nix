@@ -1,5 +1,9 @@
 # Self-hosted game streaming — a personal "GeForce Now".
 #
+# NOTE: wolf.nix provides multi-user streaming on the same Moonlight ports.
+# Sunshine and Wolf cannot listen at the same time — Sunshine is the default;
+# use `wolf-on` / `wolf-off` to switch (see wolf.nix).
+#
 # Sunshine runs on this machine and streams the desktop / games with NVENC
 # hardware encoding on the NVIDIA GPU. Any device running the Moonlight
 # client (Android, iOS, Windows, macOS, Linux, Steam Deck, LG/Android TV,

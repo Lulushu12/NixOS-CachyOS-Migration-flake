@@ -22,6 +22,7 @@
     ../../modules/development.nix   # Compilers, debuggers, build tools
     ../../modules/gaming.nix        # Steam, Lutris, GameMode, RetroArch
     ../../modules/streaming.nix     # Sunshine game streaming (Moonlight clients)
+    ../../modules/wolf.nix          # Wolf multi-user game streaming (off by default)
     ../../modules/nvidia.nix        # NVIDIA proprietary driver
     ../../modules/claude.nix        # Claude Desktop (via PR #89 fix branch)
     ../../modules/audio-visualizer.nix  # Audio visualizer widget dependencies
@@ -103,6 +104,7 @@
       "video"           # GPU and display device access
       "input"           # game controller / input device access
       "gamemode"        # allow gamemoderun to grant elevated priority
+      "docker"          # manage Wolf's session containers without sudo
     ];
   };
 
