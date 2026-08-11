@@ -21,6 +21,7 @@
     ../../modules/desktop.nix       # KDE Plasma 6, display manager, Wayland tools
     ../../modules/development.nix   # Compilers, debuggers, build tools
     ../../modules/gaming.nix        # Steam, Lutris, GameMode, RetroArch
+    ../../modules/streaming.nix     # Sunshine game streaming (Moonlight clients)
     ../../modules/nvidia.nix        # NVIDIA proprietary driver
     ../../modules/claude.nix        # Claude Desktop (via PR #89 fix branch)
     ../../modules/audio-visualizer.nix  # Audio visualizer widget dependencies
